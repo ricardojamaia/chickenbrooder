@@ -6,10 +6,25 @@
 class ThresholdValue : public StateValue {
 public:
   ThresholdValue(float initialValue) : value(initialValue) {}
-  void increase(float step) override { value += step; }
-  void decrease(float step) override { value -= step; }
-  float getValue() const override { return value; }
-  void setValue(float newValue) override { value = newValue; }
+
+  void increase(float step) override {
+    value += step;
+    notifyListeners(value);
+  }
+
+  void decrease(float step) override {
+    value -= step;
+    notifyListeners(value);
+  }
+
+  float getValue() const override {
+    return value;
+  }
+
+  void setValue(float newValue) override {
+    value = newValue;
+    notifyListeners(value);
+  }
 
 private:
   float value;

@@ -31,6 +31,7 @@ Thermostat thermostat(DHTPIN, DHTTYPE, LAMP1_PIN, LAMP2_PIN, &lowThreshold, &hig
 DisplayManager displayManager(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET, SCREEN_ADDRESS);
 InputManager inputManager(BUTTON_INC_PIN, BUTTON_DEC_PIN, &highThreshold);
 
+
 void setup() {
   Serial.begin(9600);
   DEBUG_BROODER_PRINTLN("Thermostat Initialized");
@@ -40,6 +41,11 @@ void setup() {
     Serial.println("Display initialisation failed");
     for (;;); // Don't proceed, loop forever
   }
+
+  // Register the listener for the high threshold
+  highThreshold.addListener([](float newValue) {
+    displayManager.showTargetTemperature(newValue);
+  });
 
   // Initialize input manager
   inputManager.begin();
@@ -55,7 +61,6 @@ void loop() {
   // Get the current temperature, humidity, and high threshold
   float temperature = thermostat.getTemperature();
   float humidity = thermostat.getHumidity();
-  float highThresholdValue = highThreshold.getValue();
 
   // Static variables to store previous temperature and humidity
   static float previousTemperature = NAN;

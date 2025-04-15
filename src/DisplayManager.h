@@ -11,6 +11,7 @@ public:
   void setTemperature(float temperature);
   void setHumidity(float humidity);
   void updateDisplay();
+  void showTargetTemperature(float targetTemperature, unsigned long duration = 2000);
 
 private:
   Adafruit_SSD1306 display;
@@ -18,6 +19,12 @@ private:
   uint8_t screenHeight;
   float currentTemperature;
   float currentHumidity;
+
+  // Temporary message state
+  bool showingTemporaryMessage = false;
+  unsigned long temporaryMessageStartTime = 0;
+  unsigned long temporaryMessageDuration = 0;
+  String temporaryMessage;
 
   void centerText(const char *text, uint8_t textSize, int16_t y);
 };

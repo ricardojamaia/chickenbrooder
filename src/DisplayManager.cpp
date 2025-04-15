@@ -2,7 +2,7 @@
 #include "DebugBrooder.h" // Include the debug macro
 
 DisplayManager::DisplayManager(uint8_t screenWidth, uint8_t screenHeight, TwoWire *wire, int8_t resetPin, uint8_t i2cAddress)
-    : display(screenWidth, screenHeight, wire, resetPin), screenWidth(screenWidth), screenHeight(screenHeight), currentTemperature(NAN), currentHumidity(NAN) {}
+    : display(screenWidth, screenHeight, wire, resetPin), screenWidth(screenWidth), screenHeight(screenHeight), currentTemperature(NAN), currentHumidity(NAN), showingTemporaryMessage(false), temporaryMessageStartTime(0), temporaryMessageDuration(0) {}
 
 bool DisplayManager::begin() {
   DEBUG_BROODER_PRINTLN("Initializing OLED display...");
@@ -25,6 +25,18 @@ void DisplayManager::setHumidity(float humidity) {
 }
 
 void DisplayManager::updateDisplay() {
+  // Check if a temporary message is being displayed
+  if (showingTemporaryMessage) {
+    unsigned long currentTime = millis();
+    if (currentTime - temporaryMessageStartTime < temporaryMessageDuration) {
+      return;
+    } else {
+      // Temporary message duration has elapsed, return to normal display
+      showingTemporaryMessage = false;
+    }
+  }
+
+  // Normal display logic
   DEBUG_BROODER_PRINTLN("Updating OLED display...");
   display.clearDisplay();
   display.setTextColor(SSD1306_WHITE);
@@ -46,8 +58,24 @@ void DisplayManager::updateDisplay() {
   display.display();
 }
 
-void DisplayManager::centerText(const char *text, uint8_t textSize, int16_t y) {
+void DisplayManager::showTargetTemperature(float targetTemperature, unsigned long duration) {
+  DEBUG_BROODER_PRINT("Displaying target temperature: ");
+  DEBUG_BROODER_PRINTLN(targetTemperature);
 
+  temporaryMessageDuration = duration;
+  temporaryMessageStartTime = millis();
+  showingTemporaryMessage = true;
+
+  display.clearDisplay();
+
+  // Format the target temperature as a string
+  String tempStr = String(targetTemperature, 1) + " C";
+  centerText(tempStr.c_str(), 2, 30);
+
+  display.display();
+}
+
+void DisplayManager::centerText(const char *text, uint8_t textSize, int16_t y) {
   int16_t x1, y1;
   uint16_t w, h;
 
