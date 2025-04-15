@@ -4,7 +4,7 @@
 #include "DebugBrooder.h"
 #include "DisplayManager.h"
 #include "InputManager.h"
-#include "ThresholdValue.h"
+#include "StateValue.h"
 
 // Define the pins and thresholds
 #define DHTPIN 2
@@ -23,14 +23,17 @@
 #define SCREEN_ADDRESS 0x3C
 
 // Create shared state for the thresholds
-ThresholdValue lowThreshold(32.0);
-ThresholdValue highThreshold(38.0);
+StateValue lowThreshold(32.0);
+StateValue targetTemperature(38.0);
+
+// Create shared state for temperature and humidity
+StateValue temperature(25.0); // Initial temperature
+StateValue humidity(60.0);    // Initial humidity
 
 // Create the thermostat, display manager, and input manager objects
-Thermostat thermostat(DHTPIN, DHTTYPE, LAMP1_PIN, LAMP2_PIN, &lowThreshold, &highThreshold);
-DisplayManager displayManager(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET, SCREEN_ADDRESS);
-InputManager inputManager(BUTTON_INC_PIN, BUTTON_DEC_PIN, &highThreshold);
-
+Thermostat thermostat(DHTPIN, DHTTYPE, LAMP1_PIN, LAMP2_PIN, &lowThreshold, &targetTemperature, &temperature, &humidity);
+DisplayManager displayManager(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET, SCREEN_ADDRESS, &temperature, &humidity, &targetTemperature);
+InputManager inputManager(BUTTON_INC_PIN, BUTTON_DEC_PIN, &targetTemperature);
 
 void setup() {
   Serial.begin(9600);
@@ -41,11 +44,6 @@ void setup() {
     Serial.println("Display initialisation failed");
     for (;;); // Don't proceed, loop forever
   }
-
-  // Register the listener for the high threshold
-  highThreshold.addListener([](float newValue) {
-    displayManager.showTargetTemperature(newValue);
-  });
 
   // Initialize input manager
   inputManager.begin();
@@ -58,27 +56,6 @@ void loop() {
   // Update the input manager (handles button presses)
   inputManager.update();
 
-  // Get the current temperature, humidity, and high threshold
-  float temperature = thermostat.getTemperature();
-  float humidity = thermostat.getHumidity();
-
-  // Static variables to store previous temperature and humidity
-  static float previousTemperature = NAN;
-  static float previousHumidity = NAN;
-
-  // Check if temperature or humidity has changed
-  if (temperature != previousTemperature || humidity != previousHumidity) {
-    DEBUG_BROODER_PRINTLN("Temperature or humidity changed. Updating display...");
-
-    // Update the display manager with the new values
-    displayManager.setTemperature(temperature);
-    displayManager.setHumidity(humidity);
-    displayManager.updateDisplay();
-
-    // Update the previous values
-    previousTemperature = temperature;
-    previousHumidity = humidity;
-  }
-
- 
+  // Update the display manager
+  displayManager.updateDisplay();
 }

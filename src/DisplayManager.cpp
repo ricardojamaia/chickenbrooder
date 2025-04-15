@@ -1,27 +1,41 @@
 #include "DisplayManager.h"
-#include "DebugBrooder.h" // Include the debug macro
+#include "DebugBrooder.h"
 
-DisplayManager::DisplayManager(uint8_t screenWidth, uint8_t screenHeight, TwoWire *wire, int8_t resetPin, uint8_t i2cAddress)
-    : display(screenWidth, screenHeight, wire, resetPin), screenWidth(screenWidth), screenHeight(screenHeight), currentTemperature(NAN), currentHumidity(NAN), showingTemporaryMessage(false), temporaryMessageStartTime(0), temporaryMessageDuration(0) {}
+
+DisplayManager::DisplayManager(uint8_t screenWidth, uint8_t screenHeight, TwoWire *wire, int8_t resetPin, uint8_t i2cAddress, StateValue *temperature, StateValue *humidity, StateValue *targetTemperature)
+    : display(screenWidth, screenHeight, wire, resetPin), screenWidth(screenWidth), screenHeight(screenHeight), temperature(temperature), humidity(humidity), targetTemperature(targetTemperature) {
+
+  // Register listeners for temperature, humidity, and target temperature
+  temperature->addListener([](float newValue, void* context) {
+    DisplayManager* manager = static_cast<DisplayManager*>(context);
+    manager->updateRequired = true;
+  }, this);
+
+  humidity->addListener([](float newValue, void* context) {
+    DisplayManager* manager = static_cast<DisplayManager*>(context);
+    manager->updateRequired = true;
+  }, this);
+
+  targetTemperature->addListener([](float newValue, void* context) {
+    DisplayManager* manager = static_cast<DisplayManager*>(context);
+    manager->showTargetTemperature(newValue);
+  }, this);
+}
 
 bool DisplayManager::begin() {
+
   DEBUG_BROODER_PRINTLN("Initializing OLED display...");
+
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     DEBUG_BROODER_PRINTLN("OLED display initialization failed!");
     return false; // Initialization failed
   }
+
   display.clearDisplay();
   display.display();
+
   DEBUG_BROODER_PRINTLN("OLED display initialized successfully.");
   return true;
-}
-
-void DisplayManager::setTemperature(float temperature) {
-  currentTemperature = temperature;
-}
-
-void DisplayManager::setHumidity(float humidity) {
-  currentHumidity = humidity;
 }
 
 void DisplayManager::updateDisplay() {
@@ -33,29 +47,35 @@ void DisplayManager::updateDisplay() {
     } else {
       // Temporary message duration has elapsed, return to normal display
       showingTemporaryMessage = false;
+      updateRequired = true; // Set update required to refresh the display
     }
   }
 
-  // Normal display logic
-  DEBUG_BROODER_PRINTLN("Updating OLED display...");
-  display.clearDisplay();
-  display.setTextColor(SSD1306_WHITE);
+  // Only update the display if an update is required
+  if (updateRequired) {
+    DEBUG_BROODER_PRINTLN("Updating display...");
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
 
-  // Display "Temperature" label
-  centerText("Temperature:", 1, 0);
+    // Display "Temperature" label
+    centerText("Temperature:", 1, 0);
 
-  // Display temperature value in large font
-  String tempStr = String(currentTemperature, 1) + " C";
-  centerText(tempStr.c_str(), 2, 10);
+    // Display temperature value in large font
+    String tempStr = String(temperature->getValue(), 1) + " C";
+    centerText(tempStr.c_str(), 2, 10);
 
-  // Display "Humidity" label
-  centerText("Humidity:", 1, 40);
+    // Display "Humidity" label
+    centerText("Humidity:", 1, 40);
 
-  // Display humidity value in large font
-  String humStr = String(currentHumidity, 1) + " %";
-  centerText(humStr.c_str(), 2, 50);
+    // Display humidity value in large font
+    String humStr = String(humidity->getValue(), 1) + " %";
+    centerText(humStr.c_str(), 2, 50);
 
-  display.display();
+    display.display();
+
+    // Reset the flag
+    updateRequired = false;
+  }
 }
 
 void DisplayManager::showTargetTemperature(float targetTemperature, unsigned long duration) {

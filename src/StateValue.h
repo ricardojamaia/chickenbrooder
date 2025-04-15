@@ -5,33 +5,48 @@
 
 class StateValue {
 public:
-  virtual void increase(float step) = 0;
-  virtual void decrease(float step) = 0;
-  virtual float getValue() const = 0;
-  virtual void setValue(float value) = 0;
-  virtual ~StateValue() {}
+  StateValue(float initialValue) : value(initialValue), listenerCount(0) {}
 
-  // Listener registration
-  void addListener(void (*listener)(float)) {
-    for (int i = 0; i < MAX_LISTENERS; i++) {
-      if (listeners[i] == nullptr) {
-        listeners[i] = listener;
-        return;
-      }
+  void increase(float step) {
+    value += step;
+    notifyListeners();
+  }
+
+  void decrease(float step) {
+    value -= step;
+    notifyListeners();
+  }
+
+  float getValue() const {
+    return value;
+  }
+
+  void setValue(float newValue) {
+    if (newValue != value) {
+      value = newValue;
+      notifyListeners();
     }
   }
 
-protected:
-  void notifyListeners(float newValue) {
-    for (int i = 0; i < MAX_LISTENERS; i++) {
-      if (listeners[i] != nullptr) {
-        listeners[i](newValue);
-      }
+  void addListener(void (*listener)(float, void*), void* context) {
+    if (listenerCount < MAX_LISTENERS) {
+      listeners[listenerCount] = listener;
+      contexts[listenerCount] = context;
+      listenerCount++;
     }
   }
 
 private:
-  void (*listeners[MAX_LISTENERS])(float) = {nullptr}; // Array of listener function pointers
+  float value;
+  void (*listeners[MAX_LISTENERS])(float, void*); // Array of function pointers
+  void* contexts[MAX_LISTENERS];                 // Array of listener contexts
+  int listenerCount;
+
+  void notifyListeners() {
+    for (int i = 0; i < listenerCount; ++i) {
+      listeners[i](value, contexts[i]);
+    }
+  }
 };
 
 #endif
