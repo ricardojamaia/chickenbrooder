@@ -1,11 +1,13 @@
 #include "Thermostat.h"
+#include "DebugBrooder.h"
 
-Thermostat::Thermostat(uint8_t dhtPin, uint8_t dhtType, uint8_t lamp1Pin, uint8_t lamp2Pin, StateValue *lowThreshold, StateValue *highThreshold, StateValue *temperature, StateValue *humidity)
-    : dht(dhtPin, dhtType), lamp1Pin(lamp1Pin), lamp2Pin(lamp2Pin), lowThreshold(lowThreshold), highThreshold(highThreshold), temperature(temperature), humidity(humidity), useLamp1(true), bothLampsOn(false) {
-  pinMode(lamp1Pin, OUTPUT);
-  pinMode(lamp2Pin, OUTPUT);
-  digitalWrite(lamp1Pin, LOW);
-  digitalWrite(lamp2Pin, LOW);
+Thermostat::Thermostat(uint8_t dhtPin, uint8_t dhtType, Lamp& lamp1, Lamp& lamp2, StateValue* targetTemperature, StateValue* temperature, StateValue* humidity)
+    : dht(dhtPin, dhtType), lamp1(lamp1), lamp2(lamp2), targetTemperature(targetTemperature), temperature(temperature), humidity(humidity), useLamp1(true) {
+    }
+
+void Thermostat::begin() {
+  lamp1.begin();
+  lamp2.begin();
   dht.begin();
 }
 
@@ -27,29 +29,28 @@ void Thermostat::update() {
 }
 
 void Thermostat::controlLamps(float temperature) {
-  if (temperature < lowThreshold->getValue()) {
-    digitalWrite(lamp1Pin, HIGH);
-    digitalWrite(lamp2Pin, HIGH);
-    bothLampsOn = true;
-  } else if (temperature >= lowThreshold->getValue() && temperature < highThreshold->getValue()) {
-    if (bothLampsOn) {
-      digitalWrite(lamp1Pin, LOW);
-      digitalWrite(lamp2Pin, LOW);
-      bothLampsOn = false;
-      delay(1000);
-    }
-
+  
+  float lowThreshold = targetTemperature->getValue() * 0.9;
+  
+  if (temperature < lowThreshold) {
+    lamp1.turnOn();
+    lamp2.turnOn();
+  } else if (temperature >= lowThreshold && temperature < targetTemperature->getValue()) {
     if (useLamp1) {
-      digitalWrite(lamp1Pin, HIGH);
-      digitalWrite(lamp2Pin, LOW);
+      lamp1.turnOn();
+      lamp2.turnOff();
     } else {
-      digitalWrite(lamp1Pin, LOW);
-      digitalWrite(lamp2Pin, HIGH);
+      lamp1.turnOff();
+      lamp2.turnOn();
     }
-    useLamp1 = !useLamp1;
-  } else {
-    digitalWrite(lamp1Pin, LOW);
-    digitalWrite(lamp2Pin, LOW);
-    bothLampsOn = false;
+  } else if (temperature > targetTemperature->getValue()){
+    if (lamp1.getStatus() || lamp2.getStatus()) {
+      lamp1.turnOff();
+      lamp2.turnOff();
+
+      DEBUG_BROODER_PRINT("Switching to lamp ");
+      DEBUG_BROODER_PRINTLN(useLamp1 ? "2" : "1");
+      useLamp1 = !useLamp1; // Toggle the lamp to use next time
+    }
   }
 }

@@ -3,30 +3,26 @@
 
 #include <Arduino.h>
 #include <DHT.h>
+#include "Lamp.h"
 #include "StateValue.h"
 
 class Thermostat {
 public:
-  Thermostat(uint8_t dhtPin, uint8_t dhtType, uint8_t lamp1Pin, uint8_t lamp2Pin, StateValue *lowThreshold, StateValue *highThreshold, StateValue *temperature, StateValue *humidity);
+  Thermostat(uint8_t dhtPin, uint8_t dhtType, Lamp& lamp1, Lamp& lamp2, StateValue* targetTemperature, StateValue* temperature, StateValue* humidity);
+  void begin(); // Initialization method
   void update();
-  float getTemperature();
-  float getHumidity();
 
 private:
-  uint8_t lamp1Pin;
-  uint8_t lamp2Pin;
-  StateValue *lowThreshold;
-  StateValue *highThreshold;
-  StateValue *temperature;
-  StateValue *humidity;
-  bool useLamp1;
-  bool bothLampsOn;
+  DHT dht;
+  Lamp& lamp1; // Reference to Lamp 1
+  Lamp& lamp2; // Reference to Lamp 2
 
-  DHT dht; // DHT sensor instance
-  float currentTemperature;
-  float currentHumidity;
+  StateValue* targetTemperature;
+  StateValue* temperature;
+  StateValue* humidity;
+  bool useLamp1; // Flag to alternate between lamps
 
   void controlLamps(float temperature);
 };
 
-#endif
+#endif // THERMOSTAT_H
