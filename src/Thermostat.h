@@ -8,7 +8,7 @@
 
 class Thermostat {
 public:
-  Thermostat(StateValue* temperature, Lamp& lamp1, Lamp& lamp2, StateValue* targetTemperature);
+  Thermostat(StateValue* temperature, Lamp& heatingLamp1, Lamp& heatingLamp2, StateValue* targetTemperature);
 
   void begin();
 
@@ -16,8 +16,8 @@ public:
 
 private:
   StateValue* temperature;      // Reference to the current temperature
-  Lamp& lamp1;                  // Reference to Lamp 1
-  Lamp& lamp2;                  // Reference to Lamp 2
+  Lamp& heatingLamp1;                  // Reference to Lamp 1
+  Lamp& heatingLamp2;                  // Reference to Lamp 2
   StateValue* targetTemperature; // Reference to the target temperature
   bool useLamp1;                // Flag to alternate between lamps
 

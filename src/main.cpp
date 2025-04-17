@@ -1,12 +1,14 @@
 #include <Arduino.h>
 #include <Wire.h>
-#include "Thermostat.h"
 #include "DebugBrooder.h"
 #include "DisplayManager.h"
 #include "InputManager.h"
-#include "StateValue.h"
 #include "Lamp.h"
+#include "PushButton.h"
+#include "State.h"
+#include "StateControlledLamp.h"
 #include "Sensor.h"
+#include "Thermostat.h"
 
 // Define the pins and thresholds
 #define DHTPIN 27
@@ -20,26 +22,34 @@
 #define BUTTON_INC_PIN 34
 #define BUTTON_DEC_PIN 35
 
+#define BUTTON_LIGHT_PIN 14
+
 // OLED display dimensions
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define OLED_RESET -1
 #define SCREEN_ADDRESS 0x3C
 
-// Create shared state for the thresholds
+// Create shared state for the target temperature
 StateValue targetTemperature(38.0);
 
 // Create shared state for temperature and humidity
 StateValue temperature(25.0); // Initial temperature
 StateValue humidity(60.0);    // Initial humidity
 
+// Create a State<bool> for the lamp
+State<bool> lightState(false);
+
 // Create Sensor and Lamp objects
 Sensor sensor(DHTPIN, DHTTYPE, &temperature, &humidity);
-Lamp lamp1(LAMP1_PIN);
-Lamp lamp2(LAMP2_PIN);
+Lamp heatingLamp1(LAMP1_PIN);
+Lamp heatingLamp2(LAMP2_PIN);
+StateControlledLamp light(RELAY_3_PIN, &lightState);
+PushButton lightButton(BUTTON_LIGHT_PIN, &lightState);
+
 
 // Create the thermostat, display manager, and input manager objects
-Thermostat thermostat(&temperature, lamp1, lamp2, &targetTemperature);
+Thermostat thermostat(&temperature, heatingLamp1, heatingLamp2, &targetTemperature);
 DisplayManager displayManager(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET, SCREEN_ADDRESS, &temperature, &humidity, &targetTemperature);
 InputManager inputManager(BUTTON_INC_PIN, BUTTON_DEC_PIN, &targetTemperature);
 
@@ -53,9 +63,13 @@ void setup() {
   DEBUG_BROODER_PRINTLN("Sensor Initialized");
 
   // Initialize the lamps
-  lamp1.begin();
-  lamp2.begin();
-  DEBUG_BROODER_PRINTLN("Lamps Initialized");
+  heatingLamp1.begin();
+  heatingLamp2.begin();
+  DEBUG_BROODER_PRINTLN("Heating lamps Initialized");
+
+  lightButton.begin();
+  light.begin();
+  DEBUG_BROODER_PRINTLN("Light Initialized");
 
   // Initialize the thermostat
   thermostat.begin();
@@ -90,6 +104,8 @@ void loop() {
 
   // Update the input manager (handles button presses)
   inputManager.update();
+  
+  lightButton.update();
 
   // Update the display manager
   displayManager.updateDisplay();

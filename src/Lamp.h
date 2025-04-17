@@ -7,7 +7,7 @@ class Lamp {
 public:
   Lamp(uint8_t pin);
 
-  void begin();
+  virtual void begin();
   void turnOn();
   void turnOff();
   bool getStatus() const;
