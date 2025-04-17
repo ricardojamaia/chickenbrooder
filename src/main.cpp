@@ -6,6 +6,7 @@
 #include "InputManager.h"
 #include "StateValue.h"
 #include "Lamp.h"
+#include "Sensor.h"
 
 // Define the pins and thresholds
 #define DHTPIN 27
@@ -32,12 +33,13 @@ StateValue targetTemperature(38.0);
 StateValue temperature(25.0); // Initial temperature
 StateValue humidity(60.0);    // Initial humidity
 
-// Create Lamp objects
+// Create Sensor and Lamp objects
+Sensor sensor(DHTPIN, DHTTYPE, &temperature, &humidity);
 Lamp lamp1(LAMP1_PIN);
 Lamp lamp2(LAMP2_PIN);
 
 // Create the thermostat, display manager, and input manager objects
-Thermostat thermostat(DHTPIN, DHTTYPE, lamp1, lamp2, &targetTemperature, &temperature, &humidity);
+Thermostat thermostat(&temperature, lamp1, lamp2, &targetTemperature);
 DisplayManager displayManager(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET, SCREEN_ADDRESS, &temperature, &humidity, &targetTemperature);
 InputManager inputManager(BUTTON_INC_PIN, BUTTON_DEC_PIN, &targetTemperature);
 
@@ -45,6 +47,15 @@ void setup() {
   Serial.begin(115200);
 
   DEBUG_BROODER_PRINTLN("Starting Brooder...");
+
+  // Initialize the sensor
+  sensor.begin();
+  DEBUG_BROODER_PRINTLN("Sensor Initialized");
+
+  // Initialize the lamps
+  lamp1.begin();
+  lamp2.begin();
+  DEBUG_BROODER_PRINTLN("Lamps Initialized");
 
   // Initialize the thermostat
   thermostat.begin();
@@ -69,6 +80,11 @@ void setup() {
 }
 
 void loop() {
+  
+  // Update the sensor readings
+  sensor.update();
+
+
   // Update the thermostat (handles temperature reading and lamp control)
   thermostat.update();
 

@@ -2,27 +2,25 @@
 #define THERMOSTAT_H
 
 #include <Arduino.h>
-#include <DHT.h>
 #include "Lamp.h"
 #include "StateValue.h"
+#include "Sensor.h"
 
 class Thermostat {
 public:
-  Thermostat(uint8_t dhtPin, uint8_t dhtType, Lamp& lamp1, Lamp& lamp2, StateValue* targetTemperature, StateValue* temperature, StateValue* humidity);
-  void begin(); // Initialization method
+  Thermostat(StateValue* temperature, Lamp& lamp1, Lamp& lamp2, StateValue* targetTemperature);
+
+  void begin();
+
   void update();
 
 private:
-  DHT dht;
-  Lamp& lamp1; // Reference to Lamp 1
-  Lamp& lamp2; // Reference to Lamp 2
+  StateValue* temperature;      // Reference to the current temperature
+  Lamp& lamp1;                  // Reference to Lamp 1
+  Lamp& lamp2;                  // Reference to Lamp 2
+  StateValue* targetTemperature; // Reference to the target temperature
+  bool useLamp1;                // Flag to alternate between lamps
 
-  StateValue* targetTemperature;
-  StateValue* temperature;
-  StateValue* humidity;
-  bool useLamp1; // Flag to alternate between lamps
-
-  void controlLamps(float temperature);
 };
 
 #endif // THERMOSTAT_H
