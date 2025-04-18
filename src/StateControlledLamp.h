@@ -9,6 +9,8 @@ public:
   StateControlledLamp(uint8_t pin, State<bool>* state);
 
   void begin() override;
+  void turnOn() override;
+  void turnOff() override;
 
 private:
   State<bool>* state;

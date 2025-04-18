@@ -1,9 +1,12 @@
 #include "DisplayManager.h"
 #include "DebugBrooder.h"
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
-
-DisplayManager::DisplayManager(uint8_t screenWidth, uint8_t screenHeight, TwoWire *wire, int8_t resetPin, uint8_t i2cAddress, State<float> *temperature, State<float> *humidity, State<float> *targetTemperature)
-    : display(screenWidth, screenHeight, wire, resetPin), screenWidth(screenWidth), screenHeight(screenHeight), temperature(temperature), humidity(humidity), targetTemperature(targetTemperature) {
+DisplayManager::DisplayManager(uint8_t screenWidth, uint8_t screenHeight, TwoWire *wire, int8_t resetPin, uint8_t i2cAddress,
+                               State<float> *temperature, State<float> *humidity, State<float> *targetTemperature, State<bool> *relayStates[], uint8_t relayCount)
+    : display(screenWidth, screenHeight, wire, resetPin), screenWidth(screenWidth), screenHeight(screenHeight),
+      temperature(temperature), humidity(humidity), targetTemperature(targetTemperature), relayStates(relayStates), relayCount(relayCount) {
 
   // Register listeners for temperature, humidity, and target temperature
   temperature->addListener([](float newValue, void* context) {
@@ -20,6 +23,14 @@ DisplayManager::DisplayManager(uint8_t screenWidth, uint8_t screenHeight, TwoWir
     DisplayManager* manager = static_cast<DisplayManager*>(context);
     manager->showTargetTemperature(newValue);
   }, this);
+
+  // Register listeners for relay states
+  for (uint8_t i = 0; i < relayCount; i++) {
+    relayStates[i]->addListener([](bool newValue, void* context) {
+      DisplayManager* manager = static_cast<DisplayManager*>(context);
+      manager->updateRequired = true;
+    }, this);
+  }
 }
 
 bool DisplayManager::begin() {
@@ -58,11 +69,11 @@ void DisplayManager::updateDisplay() {
     display.setTextColor(SSD1306_WHITE);
 
     // Display "Temperature" label
-    centerText("Temperature:", 1, 0);
+    centerText("Temperature:", 1, 10);
 
     // Display temperature value in large font
     String tempStr = String(temperature->getValue(), 1) + " C";
-    centerText(tempStr.c_str(), 2, 10);
+    centerText(tempStr.c_str(), 2, 20);
 
     // Display "Humidity" label
     centerText("Humidity:", 1, 40);
@@ -70,6 +81,8 @@ void DisplayManager::updateDisplay() {
     // Display humidity value in large font
     String humStr = String(humidity->getValue(), 1) + " %";
     centerText(humStr.c_str(), 2, 50);
+
+    drawStatusBar();
 
     display.display();
 
@@ -104,4 +117,23 @@ void DisplayManager::centerText(const char *text, uint8_t textSize, int16_t y) {
   int16_t x = (screenWidth - w) / 2; // Center horizontally
   display.setCursor(x, y);
   display.println(text);
+}
+
+void DisplayManager::drawStatusBar() {
+  int padding = 8; // Padding around the status bar
+  int spacing = 4;  // Spacing between icons
+  int iconWidth = ((screenWidth - padding * 2) / relayCount) - spacing; // Size of each icon
+  int iconHeight = 4;
+
+  int x = padding;      // Initial x position
+  int y = 0;            // Y position for the status bar
+
+  for (uint8_t i = 0; i < relayCount; i++) {
+    if (relayStates[i]->getValue()) {
+      display.fillRect(x, y, iconWidth, iconHeight, SSD1306_WHITE); // Filled rectangle for ON
+    } else {
+      display.drawRect(x, y, iconWidth, iconHeight, SSD1306_WHITE); // Outline rectangle for OFF
+    }
+    x += iconWidth + spacing;
+  }
 }

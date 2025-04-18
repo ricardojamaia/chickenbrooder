@@ -7,7 +7,8 @@
 
 class DisplayManager {
 public:
-  DisplayManager(uint8_t screenWidth, uint8_t screenHeight, TwoWire *wire, int8_t resetPin, uint8_t i2cAddress, State<float> *temperature, State<float> *humidity, State<float> *targetTemperature);
+  DisplayManager(uint8_t screenWidth, uint8_t screenHeight, TwoWire *wire, int8_t resetPin, uint8_t i2cAddress,
+                 State<float> *temperature, State<float> *humidity, State<float> *targetTemperature, State<bool> *relayStates[], uint8_t relayCount);
   bool begin();
   void updateDisplay();
   void showTargetTemperature(float targetTemperature, unsigned long duration = 2000);
@@ -20,6 +21,8 @@ private:
   State<float> *temperature;
   State<float> *humidity;
   State<float> *targetTemperature;
+  State<bool> **relayStates; // Array of relay states
+  uint8_t relayCount;        // Number of relays
 
   // Flag to track if an update is required
   bool updateRequired = false;
@@ -30,6 +33,7 @@ private:
   unsigned long temporaryMessageDuration = 0;
 
   void centerText(const char *text, uint8_t textSize, int16_t y);
+  void drawStatusBar();
 };
 
 #endif

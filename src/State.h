@@ -2,6 +2,7 @@
 #define STATE_H
 
 #include <type_traits> // For std::is_arithmetic
+#include "DebugBrooder.h"
 
 #define MAX_LISTENERS 5 // Maximum number of listeners
 
@@ -16,6 +17,11 @@ public:
 
   void setValue(T newValue) {
     if (newValue != value) {
+      DEBUG_BROODER_PRINT("State changed from ");
+      DEBUG_BROODER_PRINT(value);
+      DEBUG_BROODER_PRINT(" to ");
+      DEBUG_BROODER_PRINTLN(newValue);
+      
       value = newValue;
       notifyListeners();
     }

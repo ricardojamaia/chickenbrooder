@@ -1,4 +1,5 @@
 #include "Sensor.h"
+#include "DebugBrooder.h"
 
 Sensor::Sensor(uint8_t pin, uint8_t type, State<float>* temperature, State<float>* humidity)
     : dht(pin, type), temperature(temperature), humidity(humidity) {}

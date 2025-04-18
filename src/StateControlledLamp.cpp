@@ -17,3 +17,17 @@ void StateControlledLamp::onStateChange(bool newState, void* context) {
     lamp->turnOff();
   }
 }
+
+void StateControlledLamp::turnOn() {
+  if (!isOn) {
+    Lamp::turnOn();
+    state->setValue(true); // Update the state to ON
+  }
+}
+
+void StateControlledLamp::turnOff() {
+  if (isOn) {
+    Lamp::turnOff();
+    state->setValue(false); // Update the state to OFF
+  }
+}

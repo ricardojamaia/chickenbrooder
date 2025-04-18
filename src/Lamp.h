@@ -8,13 +8,14 @@ public:
   Lamp(uint8_t pin);
 
   virtual void begin();
-  void turnOn();
-  void turnOff();
+  virtual void turnOn();
+  virtual void turnOff();
   bool getStatus() const;
 
+protected:
+  bool isOn;     // Internal status of the lamp (true = ON, false = OFF)
 private:
   uint8_t pin;   // The pin connected to the lamp
-  bool isOn;     // Internal status of the lamp (true = ON, false = OFF)
 };
 
 #endif // LAMP_H

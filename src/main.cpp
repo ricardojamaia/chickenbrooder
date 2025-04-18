@@ -40,17 +40,25 @@ State<float> humidity(60.0f);
 // Create a State<bool> for the lamp
 State<bool> lightState(false);
 
+State<bool> heatingLamp1State(false);
+State<bool> heatingLamp2State(false);
+State<bool> relay4State(false);
+
+// Create an array of relay states
+State<bool> *relayStates[] = {&heatingLamp1State, &heatingLamp2State, &lightState, &relay4State};
+
+
 // Create Sensor and Lamp objects
 Sensor sensor(DHTPIN, DHTTYPE, &temperature, &humidity);
-Lamp heatingLamp1(LAMP1_PIN);
-Lamp heatingLamp2(LAMP2_PIN);
+StateControlledLamp heatingLamp1(LAMP1_PIN, &heatingLamp1State);
+StateControlledLamp heatingLamp2(LAMP2_PIN, &heatingLamp2State);
 StateControlledLamp light(RELAY_3_PIN, &lightState);
 PushButton lightButton(BUTTON_LIGHT_PIN, &lightState);
 
 
 // Create the thermostat, display manager, and input manager objects
 Thermostat thermostat(&temperature, heatingLamp1, heatingLamp2, &targetTemperature);
-DisplayManager displayManager(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET, SCREEN_ADDRESS, &temperature, &humidity, &targetTemperature);
+DisplayManager displayManager(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET, SCREEN_ADDRESS, &temperature, &humidity, &targetTemperature, relayStates, 4);
 InputManager inputManager(BUTTON_INC_PIN, BUTTON_DEC_PIN, &targetTemperature);
 
 void setup() {
@@ -110,11 +118,4 @@ void loop() {
   // Update the display manager
   displayManager.updateDisplay();
 
-  // Example: Increase temperature
-  temperature.increase(0.5f);
-
-  // Example: Decrease humidity
-  humidity.decrease(1.0f);
-
-  delay(50); // Small delay to debounce the button
 }
