@@ -1,7 +1,7 @@
 #include "Thermostat.h"
 #include "DebugBrooder.h"
 
-Thermostat::Thermostat(StateValue* temperature, Lamp& heatingLamp1, Lamp& heatingLamp2, StateValue* targetTemperature)
+Thermostat::Thermostat(State<float>* temperature, Lamp& heatingLamp1, Lamp& heatingLamp2, State<float>* targetTemperature)
     : temperature(temperature), heatingLamp1(heatingLamp1), heatingLamp2(heatingLamp2), targetTemperature(targetTemperature), useLamp1(true) {}
 
 void Thermostat::begin() {

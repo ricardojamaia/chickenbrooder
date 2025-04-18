@@ -31,11 +31,11 @@
 #define SCREEN_ADDRESS 0x3C
 
 // Create shared state for the target temperature
-StateValue targetTemperature(38.0);
+State<float> targetTemperature(38.0);
 
 // Create shared state for temperature and humidity
-StateValue temperature(25.0); // Initial temperature
-StateValue humidity(60.0);    // Initial humidity
+State<float> temperature(25.0f);
+State<float> humidity(60.0f);
 
 // Create a State<bool> for the lamp
 State<bool> lightState(false);
@@ -109,4 +109,12 @@ void loop() {
 
   // Update the display manager
   displayManager.updateDisplay();
-  }
+
+  // Example: Increase temperature
+  temperature.increase(0.5f);
+
+  // Example: Decrease humidity
+  humidity.decrease(1.0f);
+
+  delay(50); // Small delay to debounce the button
+}

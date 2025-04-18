@@ -3,19 +3,19 @@
 
 #include <Arduino.h>
 #include <DHT.h>
-#include "StateValue.h"
+#include "State.h"
 
 class Sensor {
 public:
-  Sensor(uint8_t pin, uint8_t type, StateValue* temperature, StateValue* humidity);
+  Sensor(uint8_t pin, uint8_t type, State<float>* temperature, State<float>* humidity);
 
   void begin();
   void update();
 
 private:
   DHT dht;
-  StateValue* temperature; // Reference to the temperature StateValue
-  StateValue* humidity;    // Reference to the humidity StateValue
+  State<float>* temperature; // Reference to the temperature StateValue
+  State<float>* humidity;    // Reference to the humidity StateValue
 };
 
 #endif // SENSOR_H

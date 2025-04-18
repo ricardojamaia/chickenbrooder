@@ -3,11 +3,11 @@
 
 #include <Adafruit_SSD1306.h>
 #include <Arduino.h>
-#include "StateValue.h"
+#include "State.h"
 
 class DisplayManager {
 public:
-  DisplayManager(uint8_t screenWidth, uint8_t screenHeight, TwoWire *wire, int8_t resetPin, uint8_t i2cAddress, StateValue *temperature, StateValue *humidity, StateValue *targetTemperature);
+  DisplayManager(uint8_t screenWidth, uint8_t screenHeight, TwoWire *wire, int8_t resetPin, uint8_t i2cAddress, State<float> *temperature, State<float> *humidity, State<float> *targetTemperature);
   bool begin();
   void updateDisplay();
   void showTargetTemperature(float targetTemperature, unsigned long duration = 2000);
@@ -17,9 +17,9 @@ private:
   Adafruit_SSD1306 display;
   uint8_t screenWidth;
   uint8_t screenHeight;
-  StateValue *temperature;
-  StateValue *humidity;
-  StateValue *targetTemperature;
+  State<float> *temperature;
+  State<float> *humidity;
+  State<float> *targetTemperature;
 
   // Flag to track if an update is required
   bool updateRequired = false;

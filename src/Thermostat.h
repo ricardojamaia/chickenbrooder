@@ -3,22 +3,22 @@
 
 #include <Arduino.h>
 #include "Lamp.h"
-#include "StateValue.h"
+#include "State.h"
 #include "Sensor.h"
 
 class Thermostat {
 public:
-  Thermostat(StateValue* temperature, Lamp& heatingLamp1, Lamp& heatingLamp2, StateValue* targetTemperature);
+  Thermostat(State<float>* temperature, Lamp& heatingLamp1, Lamp& heatingLamp2, State<float>* targetTemperature);
 
   void begin();
 
   void update();
 
 private:
-  StateValue* temperature;      // Reference to the current temperature
+  State<float>* temperature;      // Reference to the current temperature
   Lamp& heatingLamp1;                  // Reference to Lamp 1
   Lamp& heatingLamp2;                  // Reference to Lamp 2
-  StateValue* targetTemperature; // Reference to the target temperature
+  State<float>* targetTemperature; // Reference to the target temperature
   bool useLamp1;                // Flag to alternate between lamps
 
 };

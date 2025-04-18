@@ -2,7 +2,7 @@
 #include "DebugBrooder.h"
 
 
-DisplayManager::DisplayManager(uint8_t screenWidth, uint8_t screenHeight, TwoWire *wire, int8_t resetPin, uint8_t i2cAddress, StateValue *temperature, StateValue *humidity, StateValue *targetTemperature)
+DisplayManager::DisplayManager(uint8_t screenWidth, uint8_t screenHeight, TwoWire *wire, int8_t resetPin, uint8_t i2cAddress, State<float> *temperature, State<float> *humidity, State<float> *targetTemperature)
     : display(screenWidth, screenHeight, wire, resetPin), screenWidth(screenWidth), screenHeight(screenHeight), temperature(temperature), humidity(humidity), targetTemperature(targetTemperature) {
 
   // Register listeners for temperature, humidity, and target temperature
