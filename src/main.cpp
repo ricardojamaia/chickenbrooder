@@ -1,14 +1,19 @@
 #include <Arduino.h>
 #include <Wire.h>
+
 #include "DebugBrooder.h"
 #include "DisplayManager.h"
 #include "InputManager.h"
 #include "Lamp.h"
+#include "NetworkManager.h"
 #include "PushButton.h"
 #include "State.h"
 #include "StateControlledLamp.h"
 #include "Sensor.h"
 #include "Thermostat.h"
+#include "WiFi.h"
+#include "secrets.h"
+
 
 // Define the pins and thresholds
 #define DHTPIN 27
@@ -61,10 +66,26 @@ Thermostat thermostat(&temperature, heatingLamp1, heatingLamp2, &targetTemperatu
 DisplayManager displayManager(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET, SCREEN_ADDRESS, &temperature, &humidity, &targetTemperature, relayStates, 4);
 InputManager inputManager(BUTTON_INC_PIN, BUTTON_DEC_PIN, &targetTemperature);
 
+NetworkManager networkManager(WIFI_SSID, WIFI_PASSWORD);
+
 void setup() {
   Serial.begin(115200);
 
+
+
+
   DEBUG_BROODER_PRINTLN("Starting Brooder...");
+
+
+  // Initialize the network manager
+  networkManager.begin();
+
+#ifdef UDP_SERIAL_MONITOR
+  // Initialize remote debugging
+  initDebug();
+  DEBUG_BROODER_PRINTLN("Remote Debugging Initialized");
+  delay(2000);
+#endif
 
   // Initialize the sensor
   sensor.begin();
@@ -97,11 +118,18 @@ void setup() {
   pinMode(RELAY_4_PIN, OUTPUT); // Set relay pin as output
   digitalWrite(RELAY_4_PIN, LOW); // Ensure relay is off at startup
 
+
   DEBUG_BROODER_PRINTLN("Brooder started");
 
 }
 
 void loop() {
+
+  if (networkManager.isStarted()) {
+    networkManager.run();
+  } else {
+    networkManager.begin();
+  }
   
   // Update the sensor readings
   sensor.update();
