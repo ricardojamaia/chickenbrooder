@@ -1,7 +1,7 @@
 #ifndef THERMOSTAT_H
 #define THERMOSTAT_H
 
-#include <Arduino.h>
+
 #include "Lamp.h"
 #include "State.h"
 #include "Sensor.h"
