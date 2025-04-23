@@ -92,7 +92,6 @@ void setup() {
 #ifdef UDP_SERIAL_MONITOR
   // Initialize remote debugging
   initDebug();
-  delay(5000);
   DEBUG_BROODER_PRINTLN("Remote Debugging Initialized");
   DEBUG_BROODER_PRINTLN("Chicken Brooder");
   DEBUG_BROODER_PRINT("Build Version: ");
