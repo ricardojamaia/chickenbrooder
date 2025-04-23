@@ -12,7 +12,7 @@ void Thermostat::update() {
   
   float lowThreshold = targetTemperature->getValue() - 1.0f; // 1 degree below the target temperature
 
-  if (temperature->getValue() >= targetTemperature->getValue()) {
+  if (temperature->getValue() >= targetTemperature->getValue() && (heatingLamp1.getStatus() || heatingLamp2.getStatus())) {
     heatingLamp1.turnOff();
     heatingLamp2.turnOff();
     DEBUG_BROODER_PRINTLN("Turning off both lamps.");
@@ -39,7 +39,7 @@ void Thermostat::update() {
     return;
   }
 
-  if (temperature->getValue() < lowThreshold) {
+  if (temperature->getValue() < lowThreshold && (!heatingLamp1.getStatus() || !heatingLamp2.getStatus())) {
     heatingLamp1.turnOn();
     heatingLamp2.turnOn();
     DEBUG_BROODER_PRINTLN("Turning on both lamps.");
