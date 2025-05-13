@@ -10,6 +10,7 @@
 #include "PushButton.h"
 #include "State.h"
 #include "StateControlledLamp.h"
+#include "PresistanceManager.h"
 #include "Sensor.h"
 #include "Thermostat.h"
 #include "WiFi.h"
@@ -71,6 +72,8 @@ InputManager inputManager(BUTTON_INC_PIN, BUTTON_DEC_PIN, &targetTemperature);
 NetworkManager networkManager(WIFI_SSID, WIFI_PASSWORD);
 MqttManager mqttManager(MQTT_SERVER, MQTT_PORT, MQTT_USER, MQTT_PASSWORD, &lightState, &targetTemperature, &temperature, &humidity);
 
+PresistanceManager persistenceManager("ChickenBrooder");
+
 void setup() {
   Serial.begin(115200);
 
@@ -92,7 +95,14 @@ void setup() {
   DEBUG_BROODER_PRINT("Build Time: ");
   DEBUG_BROODER_PRINTLN(BUILD_TIME);
 
+
+
   DEBUG_BROODER_PRINTLN("Starting Chicken Brooder by Maia...");
+
+  persistenceManager.begin();
+  persistenceManager.manageState(targetTemperature, "target_temperature");
+  persistenceManager.manageState(lightState, "light_state");
+
   mqttManager.begin();
   DEBUG_BROODER_PRINTLN("MQTT Manager Initialized");
 
