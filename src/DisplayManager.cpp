@@ -64,7 +64,6 @@ void DisplayManager::updateDisplay() {
 
   // Only update the display if an update is required
   if (updateRequired) {
-    DEBUG_BROODER_PRINTLN("Updating display...");
     display.clearDisplay();
     display.setTextColor(SSD1306_WHITE);
 

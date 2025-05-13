@@ -13,6 +13,7 @@
 #include "Thermostat.h"
 #include "WiFi.h"
 #include "secrets.h"
+#include "version.h"
 
 
 // Define the pins and thresholds
@@ -36,7 +37,7 @@
 #define SCREEN_ADDRESS 0x3C
 
 // Create shared state for the target temperature
-State<float> targetTemperature(38.0);
+State<float> targetTemperature(30.0);
 
 // Create shared state for temperature and humidity
 State<float> temperature(25.0f);
@@ -72,6 +73,14 @@ void setup() {
   Serial.begin(115200);
 
 
+  Serial.println("Chicken Brooder");
+  Serial.print("Build Version: ");
+  Serial.println(BUILD_VERSION);
+  Serial.print("Build Date: ");
+  Serial.println(BUILD_DATE);
+  Serial.print("Build Time: ");
+  Serial.println(BUILD_TIME);
+
 
 
   DEBUG_BROODER_PRINTLN("Starting Brooder...");
@@ -83,9 +92,18 @@ void setup() {
 #ifdef UDP_SERIAL_MONITOR
   // Initialize remote debugging
   initDebug();
+  delay(5000);
   DEBUG_BROODER_PRINTLN("Remote Debugging Initialized");
-  delay(2000);
+  DEBUG_BROODER_PRINTLN("Chicken Brooder");
+  DEBUG_BROODER_PRINT("Build Version: ");
+  DEBUG_BROODER_PRINTLN(BUILD_VERSION);
+  DEBUG_BROODER_PRINT("Build Date: ");
+  DEBUG_BROODER_PRINTLN(BUILD_DATE);
+  DEBUG_BROODER_PRINT("Build Time: ");
+  DEBUG_BROODER_PRINTLN(BUILD_TIME);  
 #endif
+
+DEBUG_BROODER_PRINTLN("Starting Chicken Brooder by Maia...");
 
   // Initialize the sensor
   sensor.begin();
@@ -120,6 +138,11 @@ void setup() {
 
 
   DEBUG_BROODER_PRINTLN("Brooder started");
+
+  targetTemperature.addListener([](float newValue, void* context) {
+    DEBUG_BROODER_PRINT("Target temperature updated: ");
+    DEBUG_BROODER_PRINTLN(newValue);
+  }, nullptr);
 
 }
 
