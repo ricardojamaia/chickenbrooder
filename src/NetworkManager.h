@@ -19,6 +19,7 @@ class NetworkManager {
     const char* password;
     bool connected = false;
     bool started = false;
+
 };
 
 #endif // NETWORKMANAGER_H

@@ -6,6 +6,7 @@
 #include "InputManager.h"
 #include "Lamp.h"
 #include "NetworkManager.h"
+#include "MqttManager.h"
 #include "PushButton.h"
 #include "State.h"
 #include "StateControlledLamp.h"
@@ -68,42 +69,32 @@ DisplayManager displayManager(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET, SC
 InputManager inputManager(BUTTON_INC_PIN, BUTTON_DEC_PIN, &targetTemperature);
 
 NetworkManager networkManager(WIFI_SSID, WIFI_PASSWORD);
+MqttManager mqttManager(MQTT_SERVER, MQTT_PORT, MQTT_USER, MQTT_PASSWORD, &lightState, &targetTemperature, &temperature, &humidity);
 
 void setup() {
   Serial.begin(115200);
 
-
-  Serial.println("Chicken Brooder");
-  Serial.print("Build Version: ");
-  Serial.println(BUILD_VERSION);
-  Serial.print("Build Date: ");
-  Serial.println(BUILD_DATE);
-  Serial.print("Build Time: ");
-  Serial.println(BUILD_TIME);
-
-
-
-  DEBUG_BROODER_PRINTLN("Starting Brooder...");
-
-
   // Initialize the network manager
   networkManager.begin();
+
 
 #ifdef UDP_SERIAL_MONITOR
   // Initialize remote debugging
   initDebug();
-  delay(5000);
   DEBUG_BROODER_PRINTLN("Remote Debugging Initialized");
-  DEBUG_BROODER_PRINTLN("Chicken Brooder");
+#endif
+
+  DEBUG_BROODER_PRINTLN("Starting Chicken Brooder by Maia...");
   DEBUG_BROODER_PRINT("Build Version: ");
   DEBUG_BROODER_PRINTLN(BUILD_VERSION);
   DEBUG_BROODER_PRINT("Build Date: ");
   DEBUG_BROODER_PRINTLN(BUILD_DATE);
   DEBUG_BROODER_PRINT("Build Time: ");
-  DEBUG_BROODER_PRINTLN(BUILD_TIME);  
-#endif
+  DEBUG_BROODER_PRINTLN(BUILD_TIME);
 
-DEBUG_BROODER_PRINTLN("Starting Chicken Brooder by Maia...");
+  DEBUG_BROODER_PRINTLN("Starting Chicken Brooder by Maia...");
+  mqttManager.begin();
+  DEBUG_BROODER_PRINTLN("MQTT Manager Initialized");
 
   // Initialize the sensor
   sensor.begin();
@@ -152,6 +143,12 @@ void loop() {
     networkManager.run();
   } else {
     networkManager.begin();
+  }
+
+  if (mqttManager.isStarted()) {
+    mqttManager.loop();
+  } else {
+    mqttManager.begin();
   }
   
   // Update the sensor readings
