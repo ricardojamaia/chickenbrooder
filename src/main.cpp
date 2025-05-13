@@ -130,10 +130,10 @@ void setup() {
 
   DEBUG_BROODER_PRINTLN("Brooder started");
 
-  targetTemperature.addListener([](float newValue, void* context) {
+  targetTemperature.addListener([](float newValue) {
     DEBUG_BROODER_PRINT("Target temperature updated: ");
     DEBUG_BROODER_PRINTLN(newValue);
-  }, nullptr);
+  });
 
 }
 

@@ -49,32 +49,28 @@ void MqttManager::begin() {
   mqttClient.subscribe(MQTT_LIGHT_COMMAND_TOPIC);
   mqttClient.subscribe(MQTT_TARGET_TEMPERATURE_COMMAND_TOPIC);
 
-  temperature->addListener([](float newValue, void* context) {
-    MqttManager* manager = static_cast<MqttManager*>(context);
-    manager->publishTemperature(newValue);
+  temperature->addListener([this](float newValue) {
+    publishTemperature(newValue);
     DEBUG_BROODER_PRINT("Temperature update published: ");
     DEBUG_BROODER_PRINTLN(newValue);
-  }, this);
-  humidity->addListener([](float newValue, void* context) {
-    MqttManager* manager = static_cast<MqttManager*>(context);
-    manager->publishHumidity(newValue);
+  });
+  humidity->addListener([this](float newValue) {
+    publishHumidity(newValue);
     DEBUG_BROODER_PRINT("Humidity update published: ");
     DEBUG_BROODER_PRINTLN(newValue);
-  }, this);
-  lightState->addListener([](bool newValue, void* context) {
-    MqttManager* manager = static_cast<MqttManager*>(context);
-    manager->publishLightState(newValue);
+  });
+  lightState->addListener([this](bool newValue) {
+    publishLightState(newValue);
     DEBUG_BROODER_PRINT("Light state update published: ");
     DEBUG_BROODER_PRINTLN(newValue);
-  }, this);
-  targetTemperature->addListener([](float newValue, void* context) {
-    MqttManager* manager = static_cast<MqttManager*>(context);
+  });
+  targetTemperature->addListener([this](float newValue) {
     char payload[50];
     snprintf(payload, sizeof(payload), "{\"target_temperature\": %.1f}", newValue);
-    manager->mqttClient.publish(MQTT_TARGET_TEMPERATURE_TOPIC, payload);
+    mqttClient.publish(MQTT_TARGET_TEMPERATURE_TOPIC, payload);
     DEBUG_BROODER_PRINT("Target temperature update published: ");
     DEBUG_BROODER_PRINTLN(newValue);
-  }, this);
+  });
 
   started = true;
 

@@ -9,27 +9,23 @@ DisplayManager::DisplayManager(uint8_t screenWidth, uint8_t screenHeight, TwoWir
       temperature(temperature), humidity(humidity), targetTemperature(targetTemperature), relayStates(relayStates), relayCount(relayCount) {
 
   // Register listeners for temperature, humidity, and target temperature
-  temperature->addListener([](float newValue, void* context) {
-    DisplayManager* manager = static_cast<DisplayManager*>(context);
-    manager->updateRequired = true;
-  }, this);
+  temperature->addListener([this](float newValue) {
+    updateRequired = true;
+  });
 
-  humidity->addListener([](float newValue, void* context) {
-    DisplayManager* manager = static_cast<DisplayManager*>(context);
-    manager->updateRequired = true;
-  }, this);
+  humidity->addListener([this](float newValue) {
+    updateRequired = true;
+  });
 
-  targetTemperature->addListener([](float newValue, void* context) {
-    DisplayManager* manager = static_cast<DisplayManager*>(context);
-    manager->showTargetTemperature(newValue);
-  }, this);
+  targetTemperature->addListener([this](float newValue) {
+    showTargetTemperature(newValue);
+  });
 
   // Register listeners for relay states
   for (uint8_t i = 0; i < relayCount; i++) {
-    relayStates[i]->addListener([](bool newValue, void* context) {
-      DisplayManager* manager = static_cast<DisplayManager*>(context);
-      manager->updateRequired = true;
-    }, this);
+    relayStates[i]->addListener([this](bool newValue) {
+      updateRequired = true;
+    });
   }
 }
 
