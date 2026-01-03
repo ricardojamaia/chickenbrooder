@@ -13,7 +13,7 @@ class PresistanceManager {
     void end();
 
     template <typename T>
-    void manageState(State<T>& state, const char* key);
+    void manageState(State<T>* state, const char* key);
 
   private:
     Preferences preferences;

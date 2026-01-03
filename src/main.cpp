@@ -1,11 +1,13 @@
 #include <Arduino.h>
 #include <Wire.h>
+#include <esp_ota_ops.h> // For rollback functionality
 
 #include "DebugBrooder.h"
 #include "DisplayManager.h"
 #include "InputManager.h"
 #include "Lamp.h"
 #include "NetworkManager.h"
+#include "OtaManager.h"
 #include "MqttManager.h"
 #include "PushButton.h"
 #include "State.h"
@@ -38,8 +40,13 @@
 #define OLED_RESET -1
 #define SCREEN_ADDRESS 0x3C
 
+extern "C" bool verifyRollbackLater() {
+    // Return true to delay rollback verification until esp_ota_mark_app_valid_cancel_rollback() is called
+    return true;
+}
+
 // Create shared state for the target temperature
-State<float> targetTemperature(30.0);
+State<float> targetTemperature(26.0);
 
 // Create shared state for temperature and humidity
 State<float> temperature(25.0f);
@@ -70,24 +77,59 @@ DisplayManager displayManager(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET, SC
 InputManager inputManager(BUTTON_INC_PIN, BUTTON_DEC_PIN, &targetTemperature);
 
 NetworkManager networkManager(WIFI_SSID, WIFI_PASSWORD);
+OtaManager otaManager;
 MqttManager mqttManager(MQTT_SERVER, MQTT_PORT, MQTT_USER, MQTT_PASSWORD, &lightState, &targetTemperature, &temperature, &humidity);
 
 PresistanceManager persistenceManager("ChickenBrooder");
+
+bool running_in_ap_mode = false;
+
+bool healthCheck() {
+
+  return true;
+}
+
+void rollbackToPreviousImage() {
+  DEBUG_BROODER_PRINTLN("Rolling back to the previous firmware image...");
+  
+  const esp_partition_t* runningPartition = esp_ota_get_running_partition();
+
+  if (esp_ota_mark_app_invalid_rollback_and_reboot() == ESP_OK) {
+    DEBUG_BROODER_PRINTLN("Rollback successful. Rebooting...");
+    delay(1000);
+    ESP.restart();
+  } else {
+    DEBUG_BROODER_PRINTLN("Rollback failed. Staying on the current firmware.");
+  }
+}
 
 void setup() {
   Serial.begin(115200);
 
   // Initialize the network manager
-  networkManager.begin();
+  networkManager.begin(WIFI_STA);
+
+  int n_retries = 1;
+  while (!networkManager.isStarted() && n_retries < 3){
+    delay(5000);
+    networkManager.begin();
+    n_retries++;
+  }
+
+  if (!networkManager.isStarted()){
+    running_in_ap_mode = true;
+    if (!networkManager.begin(WIFI_AP)){
+      DEBUG_BROODER_PRINTLN("Failed to start network!");
+      rollbackToPreviousImage();
+    }
+  }
 
 
 #ifdef UDP_SERIAL_MONITOR
   // Initialize remote debugging
   initDebug();
-  DEBUG_BROODER_PRINTLN("Remote Debugging Initialized");
 #endif
 
-  DEBUG_BROODER_PRINTLN("Starting Chicken Brooder by Maia...");
   DEBUG_BROODER_PRINT("Build Version: ");
   DEBUG_BROODER_PRINTLN(BUILD_VERSION);
   DEBUG_BROODER_PRINT("Build Date: ");
@@ -95,16 +137,20 @@ void setup() {
   DEBUG_BROODER_PRINT("Build Time: ");
   DEBUG_BROODER_PRINTLN(BUILD_TIME);
 
+  if (!running_in_ap_mode) {
+    DEBUG_BROODER_PRINTLN("Starting Chicken Brooder by Maia...");
+  } else {
+    DEBUG_BROODER_PRINTLN("Starting Chicken Brooder by Maia in AP Mode...");
+  }
 
-
-  DEBUG_BROODER_PRINTLN("Starting Chicken Brooder by Maia...");
+  otaManager.begin();
 
   persistenceManager.begin();
-  persistenceManager.manageState(targetTemperature, "target_temperature");
-  persistenceManager.manageState(lightState, "light_state");
 
-  mqttManager.begin();
-  DEBUG_BROODER_PRINTLN("MQTT Manager Initialized");
+  if (!running_in_ap_mode) {
+    mqttManager.begin();
+    DEBUG_BROODER_PRINTLN("MQTT Manager Initialized");
+  }
 
   // Initialize the sensor
   sensor.begin();
@@ -140,10 +186,22 @@ void setup() {
 
   DEBUG_BROODER_PRINTLN("Brooder started");
 
+  persistenceManager.manageState(&targetTemperature, "target");
+  persistenceManager.manageState(&lightState, "light_state");
+
   targetTemperature.addListener([](float newValue) {
     DEBUG_BROODER_PRINT("Target temperature updated: ");
     DEBUG_BROODER_PRINTLN(newValue);
   });
+
+  // Perform health check and validate flash image
+  if (!healthCheck()) {
+    DEBUG_BROODER_PRINTLN("Health check failed. Rolling back to the previous image...");
+    rollbackToPreviousImage();
+  } else {
+    esp_ota_mark_app_valid_cancel_rollback();
+    DEBUG_BROODER_PRINTLN("Health check passed. Flash image is valid.");
+  }
 
 }
 
@@ -155,10 +213,18 @@ void loop() {
     networkManager.begin();
   }
 
-  if (mqttManager.isStarted()) {
-    mqttManager.loop();
+  if (otaManager.isStarted()){
+    otaManager.run();
   } else {
-    mqttManager.begin();
+    otaManager.begin();
+  }
+
+  if (!running_in_ap_mode){
+    if (mqttManager.isStarted()) {
+      mqttManager.loop();
+    } else {
+      mqttManager.begin();
+    }
   }
   
   // Update the sensor readings

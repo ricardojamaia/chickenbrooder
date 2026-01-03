@@ -48,5 +48,65 @@ def increment_build_version():
 
     print(f"Updated {version_file_path} with new BUILD_VERSION")
 
+def check_secrets(*args, **kwargs):
+    secrets_path = "include/secrets.h"
+    
+    # If secrets.h already exists, do nothing
+    if os.path.exists(secrets_path):
+        print("✅  secrets.h found!")
+        return
+    
+    print("\n" + "="*60)
+    print("⚠️  secrets.h not found - Let's create it!")
+    print("="*60 + "\n")
+    
+    # Prompt for each value
+    print("WiFi SSID: ")
+    wifi_ssid = input().strip()
+    print("WiFi Password: ")
+    wifi_password = input().strip()
+    print("MQTT Server (IP or hostname): ")
+    mqtt_server = input().strip()
+    print("MQTT Port (default 1883): ")
+    mqtt_port = input().strip() or "1883"
+    print("MQTT Username: ")
+    mqtt_user = input().strip()
+    print("MQTT Password: ")
+    mqtt_password = input().strip()
+    
+    # Create the secrets.h content
+    secrets_content = f"""#ifndef SECRETS_H
+#define SECRETS_H
+
+// WiFi credentials
+#define WIFI_SSID "{wifi_ssid}"
+#define WIFI_PASSWORD "{wifi_password}"
+
+// MQTT configuration
+#define MQTT_SERVER "{mqtt_server}"
+#define MQTT_PORT {mqtt_port}
+#define MQTT_USER "{mqtt_user}"
+#define MQTT_PASSWORD "{mqtt_password}"
+
+#endif
+"""
+    
+    # Ensure include directory exists
+    os.makedirs("include", exist_ok=True)
+    
+    # Write the file
+    with open(secrets_path, 'w') as f:
+        f.write(secrets_content)
+    
+    print("\n" + "="*60)
+    print(f"✓ Created {secrets_path}")
+    print("="*60 + "\n")
+    print("You can now build your project!")
+    print(f"To change values later, edit: {secrets_path}")
+    print("="*60 + "\n")
+
+# Check if secrets exist and create one if necessary
+check_secrets()
+
 # Increment the build version before the build starts
 increment_build_version()

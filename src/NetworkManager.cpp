@@ -1,5 +1,4 @@
 #include <WiFi.h>
-#include <ArduinoOTA.h>
 
 #include <Arduino.h>
 
@@ -11,51 +10,36 @@ NetworkManager::NetworkManager(const char* ssid, const char* password) {
   this->password = password;
 }
 
-bool NetworkManager::begin() {
+bool NetworkManager::begin(wifi_mode_t wifi_mode) {
+  this->wifi_mode = wifi_mode;
 
-  WiFi.mode(WIFI_STA);
-  
-  if (!connectWiFi()){
+  if (!WiFi.mode(wifi_mode)){
+    DEBUG_BROODER_PRINTLN("Failed to set WiFi mode!");
     started = false;
     return false;
   }
-
-  DEBUG_BROODER_PRINTLN("Starting OTA");
-  ArduinoOTA.setHostname("Chicken Brooder");
-
-  ArduinoOTA
-  .onStart([]() {
-    String type;
-    if (ArduinoOTA.getCommand() == U_FLASH) {
-      type = "sketch";
-    } else {  // U_SPIFFS
-      type = "filesystem";
+  
+  if (WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE)){
+    if (!WiFi.setHostname(BROODER_HOSTNAME)){
+      DEBUG_BROODER_PRINTLN("Failed to set hostname. Continuing ...");
     }
-    DEBUG_BROODER_PRINTLN("Start updating " + type);
-  })
-  .onEnd([]() {
-    DEBUG_BROODER_PRINTLN("\nEnd");
-    ESP.restart();
-  })
-  .onProgress([](unsigned int progress, unsigned int total) {
-    DEBUG_BROODER_PRINTF("Progress: %u%%\r", (progress / (total / 100)));
-  })
-  .onError([](ota_error_t error) {
-    Serial.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR) {
-      DEBUG_BROODER_PRINTLN("Auth Failed");
-    } else if (error == OTA_BEGIN_ERROR) {
-      DEBUG_BROODER_PRINTLN("Begin Failed");
-    } else if (error == OTA_CONNECT_ERROR) {
-      DEBUG_BROODER_PRINTLN("Connect Failed");
-    } else if (error == OTA_RECEIVE_ERROR) {
-      DEBUG_BROODER_PRINTLN("Receive Failed");
-    } else if (error == OTA_END_ERROR) {
-      DEBUG_BROODER_PRINTLN("End Failed");
-    }
-  });
+  } else {
+    DEBUG_BROODER_PRINTLN("Failed WiFi config. will not set the hostname. Continuing ...");
+  }
+  
 
-  ArduinoOTA.begin();
+  if (wifi_mode == WIFI_AP){
+    if (!WiFi.softAP(BROODER_AP_SSID, BROODER_AP_PASSWORD, 1, 0, 1)){
+      DEBUG_BROODER_PRINTLN("Failed to start WiFi Access Point (AP)!");
+      started = false;
+      return false;
+    }
+  } else if (!connectWiFi()){
+    started = false;
+    DEBUG_BROODER_PRINT("Failed to connect to WiFi network: ");
+    DEBUG_BROODER_PRINTLN(ssid);
+    return false;
+  }
 
   started = true;
   return true;
@@ -63,6 +47,9 @@ bool NetworkManager::begin() {
 }
 
 bool NetworkManager::connectWiFi() {
+  if (wifi_mode == WIFI_AP){
+    return true;
+  }
 
   if (WiFi.status() == WL_CONNECTED){
     DEBUG_BROODER_PRINTLN("Already connected to WiFi");
@@ -99,6 +86,11 @@ void NetworkManager::run() {
     DEBUG_BROODER_PRINTLN("NetworkManager not started");
     return;
   }
+
+  if (wifi_mode == WIFI_AP){
+    return;
+  }
+
   if (WiFi.status() != WL_CONNECTED) {
     if (lastAttempt + RETRY_DELAY > millis()){
       return;
@@ -113,5 +105,4 @@ void NetworkManager::run() {
     DEBUG_BROODER_PRINTLN("WiFi reconnected!");
   }
 
-  ArduinoOTA.handle();
 }
