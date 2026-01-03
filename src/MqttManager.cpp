@@ -1,6 +1,8 @@
 #include <MqttManager.h>
 #include "DebugBrooder.h"
 
+#define CONNECT_ATTEMPTS_DELAY_MILLIS 3 * 60 * 1000
+
 MqttManager::MqttManager(const char *mqttServer, int mqttPort, const char *mqttUser, const char *mqttPassword,
                          State<bool> *lightState, State<float> *targetTemperature, State<float> *temperature, State<float> *humidity)
     : mqttClient(wifiClient), m_mqttUser(mqttUser), mqttPassword(mqttPassword), mqttServer(mqttServer), mqttPort(mqttPort),
@@ -9,6 +11,14 @@ MqttManager::MqttManager(const char *mqttServer, int mqttPort, const char *mqttU
 }
 
 void MqttManager::begin() {
+  long actual_millis = millis();
+
+  if (m_lastConnectAttempt + CONNECT_ATTEMPTS_DELAY_MILLIS > actual_millis){
+    return;
+  }
+
+  m_lastConnectAttempt = actual_millis;
+
   started = mqttClient.connect("ChickenBrooder", m_mqttUser, mqttPassword);
   if (!started) {
     DEBUG_BROODER_PRINTLN("MQTT connection failed");
@@ -49,32 +59,20 @@ void MqttManager::begin() {
   mqttClient.subscribe(MQTT_LIGHT_COMMAND_TOPIC);
   mqttClient.subscribe(MQTT_TARGET_TEMPERATURE_COMMAND_TOPIC);
 
-  temperature->addListener([](float newValue, void* context) {
-    MqttManager* manager = static_cast<MqttManager*>(context);
-    manager->publishTemperature(newValue);
-    DEBUG_BROODER_PRINT("Temperature update published: ");
-    DEBUG_BROODER_PRINTLN(newValue);
-  }, this);
-  humidity->addListener([](float newValue, void* context) {
-    MqttManager* manager = static_cast<MqttManager*>(context);
-    manager->publishHumidity(newValue);
-    DEBUG_BROODER_PRINT("Humidity update published: ");
-    DEBUG_BROODER_PRINTLN(newValue);
-  }, this);
-  lightState->addListener([](bool newValue, void* context) {
-    MqttManager* manager = static_cast<MqttManager*>(context);
-    manager->publishLightState(newValue);
-    DEBUG_BROODER_PRINT("Light state update published: ");
-    DEBUG_BROODER_PRINTLN(newValue);
-  }, this);
-  targetTemperature->addListener([](float newValue, void* context) {
-    MqttManager* manager = static_cast<MqttManager*>(context);
+  temperature->addListener([this](float newValue) {
+    publishTemperature(newValue);
+  });
+  humidity->addListener([this](float newValue) {
+    publishHumidity(newValue);
+  });
+  lightState->addListener([this](bool newValue) {
+    publishLightState(newValue);
+  });
+  targetTemperature->addListener([this](float newValue) {
     char payload[50];
     snprintf(payload, sizeof(payload), "{\"target_temperature\": %.1f}", newValue);
-    manager->mqttClient.publish(MQTT_TARGET_TEMPERATURE_TOPIC, payload);
-    DEBUG_BROODER_PRINT("Target temperature update published: ");
-    DEBUG_BROODER_PRINTLN(newValue);
-  }, this);
+    mqttClient.publish(MQTT_TARGET_TEMPERATURE_TOPIC, payload);
+  });
 
   started = true;
 
@@ -97,7 +95,7 @@ void MqttManager::publishHumidity(float humidity) {
 void MqttManager::publishLightState(bool state) {
   if (mqttClient.connected()) {
     char payload[50];
-    snprintf(payload, sizeof(payload), "{\"light_state\": %s}", state ? "On" : "Off");
+    snprintf(payload, sizeof(payload), "{\"light_state\": \"%s\"}", state ? "On" : "Off");
     mqttClient.publish(MQTT_LIGHT_TOPIC, payload);
   }
 }
@@ -109,9 +107,17 @@ void::MqttManager::publishLogMessage(const char *message) {
 }
 
 void MqttManager::loop() {
+  
   if (mqttClient.connected()) {
     mqttClient.loop();
   } else {
+    long actual_millis = millis();
+    
+    if (m_lastConnectAttempt + CONNECT_ATTEMPTS_DELAY_MILLIS > actual_millis){
+      return;
+    }
+    m_lastConnectAttempt = actual_millis;
+
     DEBUG_BROODER_PRINTLN("MQTT client not connected, attempting to reconnect...");
     if (mqttClient.connect("ChickenBrooder", m_mqttUser, mqttPassword)) {
       DEBUG_BROODER_PRINTLN("MQTT reconnected");

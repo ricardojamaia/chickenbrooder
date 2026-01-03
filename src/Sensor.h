@@ -16,6 +16,8 @@ private:
   DHT dht;
   State<float>* temperature; // Reference to the temperature StateValue
   State<float>* humidity;    // Reference to the humidity StateValue
+  unsigned long m_lastReportedFailure = 0;
+  unsigned long m_num_errors = 0;
 };
 
 #endif // SENSOR_H

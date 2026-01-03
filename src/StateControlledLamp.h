@@ -15,7 +15,6 @@ public:
 private:
   State<bool>* state;
 
-  static void onStateChange(bool newState, void* context);
 };
 
 #endif // STATECONTROLLEDLAMP_H

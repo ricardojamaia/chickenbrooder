@@ -6,16 +6,13 @@ void StateControlledLamp::begin() {
   Lamp::begin();
 
   // Register the lamp as a listener to the state
-  state->addListener(onStateChange, this);
-}
-
-void StateControlledLamp::onStateChange(bool newState, void* context) {
-  StateControlledLamp* lamp = static_cast<StateControlledLamp*>(context);
-  if (newState) {
-    lamp->turnOn();
-  } else {
-    lamp->turnOff();
-  }
+  state->addListener([this](bool newState) {
+    if (newState) {
+      turnOn();
+    } else {
+      turnOff();
+    }
+  });
 }
 
 void StateControlledLamp::turnOn() {
