@@ -2,11 +2,11 @@
 #include <Wire.h>
 #include <esp_ota_ops.h> // For rollback functionality
 
-#include "DebugBrooder.h"
 #include "DisplayManager.h"
 #include "InputManager.h"
 #include "Lamp.h"
 #include "NetworkManager.h"
+#include "BrooderLog.h"
 #include "OtaManager.h"
 #include "MqttManager.h"
 #include "PushButton.h"
@@ -90,16 +90,16 @@ bool healthCheck() {
 }
 
 void rollbackToPreviousImage() {
-  DEBUG_BROODER_PRINTLN("Rolling back to the previous firmware image...");
+  BROODER_LOG_E("Rolling back to the previous firmware image...");
   
   const esp_partition_t* runningPartition = esp_ota_get_running_partition();
 
   if (esp_ota_mark_app_invalid_rollback_and_reboot() == ESP_OK) {
-    DEBUG_BROODER_PRINTLN("Rollback successful. Rebooting...");
+    BROODER_LOG_E("Rollback successful. Rebooting...");
     delay(1000);
     ESP.restart();
   } else {
-    DEBUG_BROODER_PRINTLN("Rollback failed. Staying on the current firmware.");
+    BROODER_LOG_E("Rollback failed. Staying on the current firmware.");
   }
 }
 
@@ -119,29 +119,31 @@ void setup() {
   if (!networkManager.isStarted()){
     running_in_ap_mode = true;
     if (!networkManager.begin(WIFI_AP)){
-      DEBUG_BROODER_PRINTLN("Failed to start network!");
+      BROODER_LOG_E("Failed to start network!");
       rollbackToPreviousImage();
     }
   }
 
+  delay(1000);
 
-#ifdef UDP_SERIAL_MONITOR
-  // Initialize remote debugging
-  initDebug();
-#endif
+  BrooderLog::begin(6666);
+  //BrooderLog::setUdpTarget(IPAddress(192, 168, 1, 60));
+  BrooderLog::setUdpBroadcast();
 
-  DEBUG_BROODER_PRINT("Build Version: ");
-  DEBUG_BROODER_PRINTLN(BUILD_VERSION);
-  DEBUG_BROODER_PRINT("Build Date: ");
-  DEBUG_BROODER_PRINTLN(BUILD_DATE);
-  DEBUG_BROODER_PRINT("Build Time: ");
-  DEBUG_BROODER_PRINTLN(BUILD_TIME);
+  BROODER_LOG_I("========================================");
 
   if (!running_in_ap_mode) {
-    DEBUG_BROODER_PRINTLN("Starting Chicken Brooder by Maia...");
+    BROODER_LOG_I("Starting Chicken Brooder by Maia...");
   } else {
-    DEBUG_BROODER_PRINTLN("Starting Chicken Brooder by Maia in AP Mode...");
+    BROODER_LOG_I("Starting Chicken Brooder by Maia in AP Mode...");
   }
+
+  BROODER_LOG_I("Build Version: %d", BUILD_VERSION);
+  BROODER_LOG_I("Build Date: %s", BUILD_DATE);
+  BROODER_LOG_I("Build Time: %s", BUILD_TIME);
+  BROODER_LOG_I("========================================");
+
+  BROODER_LOG_D("IP address: %s", WiFi.localIP().toString().c_str());
 
   otaManager.begin();
 
@@ -149,30 +151,29 @@ void setup() {
 
   if (!running_in_ap_mode) {
     mqttManager.begin();
-    DEBUG_BROODER_PRINTLN("MQTT Manager Initialized");
+    BROODER_LOG_D("MQTT Manager Initialized");
   }
 
   // Initialize the sensor
   sensor.begin();
-  DEBUG_BROODER_PRINTLN("Sensor Initialized");
+  BROODER_LOG_D("Sensor Initialized");
 
   // Initialize the lamps
   heatingLamp1.begin();
   heatingLamp2.begin();
-  DEBUG_BROODER_PRINTLN("Heating lamps Initialized");
+  BROODER_LOG_D("Heating lamps Initialized");
 
   lightButton.begin();
   light.begin();
-  DEBUG_BROODER_PRINTLN("Light Initialized");
+  BROODER_LOG_D("Light Initialized");
 
   // Initialize the thermostat
   thermostat.begin();
-  DEBUG_BROODER_PRINTLN("Thermostat Initialized");
+  BROODER_LOG_D("Thermostat Initialized");
 
   // Initialize the OLED display
   if (!displayManager.begin()) {
-    Serial.println("Display initialisation failed");
-    for (;;); // Don't proceed, loop forever
+    BROODER_LOG_E("Display initialisation failed");
   }
 
   // Initialize input manager
@@ -183,24 +184,20 @@ void setup() {
   pinMode(RELAY_4_PIN, OUTPUT); // Set relay pin as output
   digitalWrite(RELAY_4_PIN, LOW); // Ensure relay is off at startup
 
-
-  DEBUG_BROODER_PRINTLN("Brooder started");
-
   persistenceManager.manageState(&targetTemperature, "target");
   persistenceManager.manageState(&lightState, "light_state");
 
   targetTemperature.addListener([](float newValue) {
-    DEBUG_BROODER_PRINT("Target temperature updated: ");
-    DEBUG_BROODER_PRINTLN(newValue);
+    BROODER_LOG_D("Target temperature updated: %.2f", newValue);
   });
 
   // Perform health check and validate flash image
   if (!healthCheck()) {
-    DEBUG_BROODER_PRINTLN("Health check failed. Rolling back to the previous image...");
+    BROODER_LOG_E("Health check failed. Rolling back to the previous image...");
     rollbackToPreviousImage();
   } else {
     esp_ota_mark_app_valid_cancel_rollback();
-    DEBUG_BROODER_PRINTLN("Health check passed. Flash image is valid.");
+    BROODER_LOG_D("Health check passed. Flash image is valid.");
   }
 
 }
@@ -218,6 +215,8 @@ void loop() {
   } else {
     otaManager.begin();
   }
+
+  BrooderLog::loop();
 
   if (!running_in_ap_mode){
     if (mqttManager.isStarted()) {

@@ -1,5 +1,5 @@
 #include "Lamp.h"
-#include "DebugBrooder.h"
+#include <esp_log.h>
 
 Lamp::Lamp(uint8_t pin) : pin(pin), isOn(false) {}
 
@@ -10,7 +10,7 @@ void Lamp::begin() {
 
 void Lamp::turnOn() {
   if (!isOn) {
-    DEBUG_BROODER_PRINTLN("Turning ON lamp on pin: " + String(pin));
+    log_d("Turning ON lamp on pin: %d", pin);
     digitalWrite(pin, HIGH); // Turn the lamp ON
     isOn = true;
   }
@@ -18,7 +18,7 @@ void Lamp::turnOn() {
 
 void Lamp::turnOff() {
   if (isOn) {
-    DEBUG_BROODER_PRINTLN("Turning OFF lamp on pin: " + String(pin));
+    log_d("Turning OFF lamp on pin: %d", pin);
     digitalWrite(pin, LOW); // Turn the lamp OFF
     isOn = false;
   }

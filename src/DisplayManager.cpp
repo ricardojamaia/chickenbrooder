@@ -1,5 +1,5 @@
 #include "DisplayManager.h"
-#include "DebugBrooder.h"
+#include "BrooderLog.h"
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
@@ -31,17 +31,17 @@ DisplayManager::DisplayManager(uint8_t screenWidth, uint8_t screenHeight, TwoWir
 
 bool DisplayManager::begin() {
 
-  DEBUG_BROODER_PRINTLN("Initializing OLED display...");
+  BROODER_LOG_D("Initializing OLED display...");
 
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-    DEBUG_BROODER_PRINTLN("OLED display initialization failed!");
+    BROODER_LOG_E("OLED display initialization failed!");
     return false; // Initialization failed
   }
 
   display.clearDisplay();
   display.display();
 
-  DEBUG_BROODER_PRINTLN("OLED display initialized successfully.");
+  BROODER_LOG_D("OLED display initialized successfully.");
   return true;
 }
 
@@ -87,8 +87,7 @@ void DisplayManager::updateDisplay() {
 }
 
 void DisplayManager::showTargetTemperature(float targetTemperature, unsigned long duration) {
-  DEBUG_BROODER_PRINT("Displaying target temperature: ");
-  DEBUG_BROODER_PRINTLN(targetTemperature);
+  BROODER_LOG_D("Displaying target temperature: %.2f", targetTemperature);
 
   temporaryMessageDuration = duration;
   temporaryMessageStartTime = millis();
