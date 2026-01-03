@@ -35,7 +35,7 @@ private:
   const char *mqttServer;
   int mqttPort;
   bool started = false;
-  unsigned long m_lastConnectAttempt = 0;
+  unsigned long m_lastConnectAttempt = 0UL;
   State<bool> *lightState;
   State<float> *targetTemperature;
   State<float> *temperature;

@@ -10,7 +10,7 @@ void Lamp::begin() {
 
 void Lamp::turnOn() {
   if (!isOn) {
-    log_d("Turning ON lamp on pin: %u", pin);
+    log_d("Turning ON lamp on pin: %d", pin);
     digitalWrite(pin, HIGH); // Turn the lamp ON
     isOn = true;
   }
@@ -18,7 +18,7 @@ void Lamp::turnOn() {
 
 void Lamp::turnOff() {
   if (isOn) {
-    log_d("Turning OFF lamp on pin: ", pin);
+    log_d("Turning OFF lamp on pin: %d", pin);
     digitalWrite(pin, LOW); // Turn the lamp OFF
     isOn = false;
   }

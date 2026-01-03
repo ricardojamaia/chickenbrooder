@@ -13,7 +13,7 @@ MqttManager::MqttManager(const char *mqttServer, int mqttPort, const char *mqttU
 void MqttManager::begin() {
   long actual_millis = millis();
 
-  if (m_lastConnectAttempt + CONNECT_ATTEMPTS_DELAY_MILLIS > actual_millis){
+  if ((m_lastConnectAttempt != 0) && (m_lastConnectAttempt + CONNECT_ATTEMPTS_DELAY_MILLIS > actual_millis)){
     return;
   }
 
@@ -54,8 +54,8 @@ void MqttManager::begin() {
     }
   });
 
-  mqttClient.subscribe(MQTT_LIGHT_COMMAND_TOPIC);
   mqttClient.subscribe(MQTT_TARGET_TEMPERATURE_COMMAND_TOPIC);
+  mqttClient.subscribe(MQTT_LIGHT_COMMAND_TOPIC);
 
   temperature->addListener([this](float newValue) {
     publishTemperature(newValue);
@@ -73,6 +73,8 @@ void MqttManager::begin() {
   });
 
   started = true;
+
+  BROODER_LOG_D("MQTT successfully initialised.");
 
 }
 

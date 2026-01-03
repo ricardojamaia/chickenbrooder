@@ -66,10 +66,12 @@ bool NetworkManager::connectWiFi() {
     lastAttempt = millis();
     return false;
   }
-  BROODER_LOG_D("IP address: %s", WiFi.localIP());
+  BROODER_LOG_D("IP address: %s", WiFi.localIP().toString().c_str());
 
   lastAttempt = 0;
   connected = true;
+
+  BROODER_LOG_D("Successfully initialised Network Manager");
 
   return true;
 }

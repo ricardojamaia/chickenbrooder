@@ -18,12 +18,12 @@ void BrooderLog::begin(uint16_t port) {
   // Redirect ESP32 logging to our custom function
   esp_log_set_vprintf(vprintf_redirect);
   
-  BROODER_LOG_D("[BrooderLog] Initialized (Serial + UDP when WiFi connects)");
+  BROODER_LOG_D("Initialized (Serial + UDP when WiFi connects)");
 }
 
 void BrooderLog::setUdpBroadcast() {
   if (WiFi.status() != WL_CONNECTED) {
-    BROODER_LOG_D("[BrooderLog] WiFi not connected - UDP will start when connected");
+    BROODER_LOG_D("WiFi not connected - UDP will start when connected");
     return;
   }
   
@@ -35,15 +35,13 @@ void BrooderLog::setUdpBroadcast() {
   udp.begin(udpPort);
   udpEnabled = true;
   
-  BROODER_LOG_D("[BrooderLog] UDP broadcast enabled -> %s:%d\n", 
+  BROODER_LOG_I("UDP broadcast enabled -> %s:%d\n", 
                 targetIP.toString().c_str(), udpPort);
-  BROODER_LOG_D("[BrooderLog] DEBUG: udpEnabled=%d, WiFi.status=%d\n", 
-                udpEnabled, WiFi.status());
 }
 
 void BrooderLog::setUdpTarget(IPAddress ip) {
   if (WiFi.status() != WL_CONNECTED) {
-    BROODER_LOG_D("[BrooderLog] WiFi not connected - UDP will start when connected");
+    BROODER_LOG_I("WiFi not connected - UDP will start when connected");
     targetIP = ip;
     return;
   }
@@ -54,7 +52,7 @@ void BrooderLog::setUdpTarget(IPAddress ip) {
   udp.begin(udpPort);
   udpEnabled = true;
   
-  BROODER_LOG_D("[BrooderLog] UDP target set -> %s:%d\n", 
+  BROODER_LOG_D("UDP target set -> %s:%d\n", 
                 targetIP.toString().c_str(), udpPort);
 }
 
@@ -62,7 +60,7 @@ void BrooderLog::enableUdp(bool enable) {
   if (enable && !udpEnabled && WiFi.status() == WL_CONNECTED) {
     udp.begin(udpPort);
     udpEnabled = true;
-    BROODER_LOG_D("[BrooderLog] UDP enabled");
+    BROODER_LOG_D("UDP enabled");
   } else if (!enable && udpEnabled) {
     flushBuffer();
     udp.stop();
@@ -81,14 +79,14 @@ void BrooderLog::loop() {
   if (!udpEnabled && WiFi.status() == WL_CONNECTED && targetIP[0] != 0) {
     udp.begin(udpPort);
     udpEnabled = true;
-    BROODER_LOG_D("[BrooderLog] UDP auto-enabled (WiFi connected)");
+    BROODER_LOG_D("UDP auto-enabled (WiFi connected)");
   }
   
   // Auto-disable UDP when WiFi disconnects
   if (udpEnabled && WiFi.status() != WL_CONNECTED) {
     udpEnabled = false;
     bufferPos = 0;
-    BROODER_LOG_D("[BrooderLog] UDP auto-disabled (WiFi disconnected)");
+    BROODER_LOG_D("UDP auto-disabled (WiFi disconnected)");
   }
   
   // Periodic flush
@@ -162,7 +160,7 @@ void BrooderLog::flushBuffer() {
       }
     }
   }
-    
+
   bufferPos = 0;
   lastFlush = millis();
 }

@@ -25,17 +25,16 @@ void PresistanceManager::manageState(State<T>* state, const char* key) {
     // Load the persisted value if it exists, otherwise use the default value
     BROODER_LOG_D("Loading state for key: %s", key);
     if (preferences.isKey(key)) {
-        BROODER_LOG_D("Found persisted value for key: %s", key);
-
         if (std::is_same<T, float>::value) {
             state->setValue(preferences.getFloat(key, state->getValue()));
+            BROODER_LOG_D("Found persisted value for key: %s -> %f", key, state->getValue());
         } else if (std::is_same<T, int>::value) {
             state->setValue(preferences.getInt(key, state->getValue()));
+            BROODER_LOG_D("Found persisted value for key: %s -> %d", key, state->getValue());
         } else if (std::is_same<T, bool>::value) {
             state->setValue(preferences.getBool(key, state->getValue()));
+            BROODER_LOG_D("Found persisted value for key: %s -> %s", key, state->getValue() ? "True" : "False");
         }
-
-        BROODER_LOG_D("Persisted value: %s", String(state->getValue()));
     } else {
         BROODER_LOG_D("No persisted value found for key: %s", key);
     }
@@ -50,16 +49,16 @@ void PresistanceManager::manageState(State<T>* state, const char* key) {
                 writtenBytes = 0;
             }
         if (std::is_same<T, float>::value) {
-            BROODER_LOG_D("Persisting float value.");
+            BROODER_LOG_D("Persisting float value: %f", newValue);
             writtenBytes = preferences.putFloat(key, newValue);
         } else if (std::is_same<T, int>::value) {
-            BROODER_LOG_D("Persisting int value.");
+            BROODER_LOG_D("Persisting int value: %d", newValue);
             writtenBytes = preferences.putInt(key, newValue);
         } else if (std::is_same<T, bool>::value) {
-            BROODER_LOG_D("Persisting bool value.");
+            BROODER_LOG_D("Persisting bool value: %s", newValue ? "True" : "False");
             writtenBytes = preferences.putBool(key, newValue);
         }
-        BROODER_LOG_D("Persisting state for key: %s with %s. Written bytes: ", key, preferences.isKey(key) ? "success" : "failure", writtenBytes);
+        BROODER_LOG_D("Persisting state for key: %s with %s. Written bytes: %d", key, preferences.isKey(key) ? "success" : "failure", writtenBytes);
     });
 
 }

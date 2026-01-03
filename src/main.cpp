@@ -127,8 +127,8 @@ void setup() {
   delay(1000);
 
   BrooderLog::begin(6666);
-  BrooderLog::setUdpTarget(IPAddress(192, 168, 1, 60));
-
+  //BrooderLog::setUdpTarget(IPAddress(192, 168, 1, 60));
+  BrooderLog::setUdpBroadcast();
 
   BROODER_LOG_I("========================================");
 
@@ -138,10 +138,12 @@ void setup() {
     BROODER_LOG_I("Starting Chicken Brooder by Maia in AP Mode...");
   }
 
-  BROODER_LOG_I("Build Version: %u", BUILD_VERSION);
+  BROODER_LOG_I("Build Version: %d", BUILD_VERSION);
   BROODER_LOG_I("Build Date: %s", BUILD_DATE);
   BROODER_LOG_I("Build Time: %s", BUILD_TIME);
   BROODER_LOG_I("========================================");
+
+  BROODER_LOG_D("IP address: %s", WiFi.localIP().toString().c_str());
 
   otaManager.begin();
 
