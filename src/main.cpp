@@ -7,6 +7,7 @@
 #include "InputManager.h"
 #include "Lamp.h"
 #include "NetworkManager.h"
+#include "NetworkLog.h"
 #include "OtaManager.h"
 #include "MqttManager.h"
 #include "PushButton.h"
@@ -106,6 +107,13 @@ void rollbackToPreviousImage() {
 void setup() {
   Serial.begin(115200);
 
+  log_i("========================================");
+  log_i("Starting Chicken Brooder by Maia...");
+  log_i("Build Version: %u", BUILD_VERSION);
+  log_i("Build Date: %s", BUILD_DATE);
+  log_i("Build Time: %s", BUILD_TIME);
+  log_i("========================================");
+
   // Initialize the network manager
   networkManager.begin(WIFI_STA);
 
@@ -124,18 +132,10 @@ void setup() {
     }
   }
 
+  delay(1000);
 
-#ifdef UDP_SERIAL_MONITOR
-  // Initialize remote debugging
-  initDebug();
-#endif
-
-  DEBUG_BROODER_PRINT("Build Version: ");
-  DEBUG_BROODER_PRINTLN(BUILD_VERSION);
-  DEBUG_BROODER_PRINT("Build Date: ");
-  DEBUG_BROODER_PRINTLN(BUILD_DATE);
-  DEBUG_BROODER_PRINT("Build Time: ");
-  DEBUG_BROODER_PRINTLN(BUILD_TIME);
+  NetworkLog::begin(6666);
+  NetworkLog::setUdpTarget(IPAddress(192, 168, 1, 60));
 
   if (!running_in_ap_mode) {
     DEBUG_BROODER_PRINTLN("Starting Chicken Brooder by Maia...");
@@ -203,6 +203,8 @@ void setup() {
     DEBUG_BROODER_PRINTLN("Health check passed. Flash image is valid.");
   }
 
+  Serial.println("Setup completed.");
+
 }
 
 void loop() {
@@ -218,6 +220,8 @@ void loop() {
   } else {
     otaManager.begin();
   }
+
+  NetworkLog::loop();
 
   if (!running_in_ap_mode){
     if (mqttManager.isStarted()) {

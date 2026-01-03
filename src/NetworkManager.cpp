@@ -69,7 +69,7 @@ bool NetworkManager::connectWiFi() {
     return false;
   }
   DEBUG_BROODER_PRINTLN("IP address: ");
-  DEBUG_BROODER_PRINTLN(WiFi.localIP());
+  //DEBUG_BROODER_PRINTLN(WiFi.localIP());
 
 
   lastAttempt = 0;
