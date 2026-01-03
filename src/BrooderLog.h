@@ -1,11 +1,29 @@
-#ifndef NETWORK_LOG_H
-#define NETWORK_LOG_H
+#ifndef BROODER_LOG_H
+#define BROODER_LOG_H
 
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WiFiUdp.h>
 
-class NetworkLog {
+#define BROODER_LOG_LEVEL_NONE    ESP_LOG_NONE
+#define BROODER_LOG_LEVEL_ERROR   ESP_LOG_ERROR
+#define BROODER_LOG_LEVEL_WARN    ESP_LOG_WARN
+#define BROODER_LOG_LEVEL_INFO    ESP_LOG_INFO
+#define BROODER_LOG_LEVEL_DEBUG   ESP_LOG_DEBUG
+#define BROODER_LOG_LEVEL_VERBOSE ESP_LOG_VERBOSE
+
+
+#ifndef BROODER_LOG_LEVEL
+#define BROODER_LOG_LEVEL BROODER_LOG_LEVEL_INFO
+#endif
+
+#define BROODER_LOG_E log_e
+#define BROODER_LOG_W log_w
+#define BROODER_LOG_I log_i
+#define BROODER_LOG_D log_d
+#define BROODER_LOG_V log_v
+
+class BrooderLog {
 public:
   static void begin(uint16_t udpPort = 6666);
   static void enableUdp(bool enable);
@@ -33,4 +51,4 @@ private:
   static void addToBuffer(const char* data, size_t len);
 };
 
-#endif // NETWORK_LOG_H
+#endif // BROODER_LOG_H

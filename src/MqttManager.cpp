@@ -1,5 +1,5 @@
 #include <MqttManager.h>
-#include "DebugBrooder.h"
+#include "BrooderLog.h"
 
 #define CONNECT_ATTEMPTS_DELAY_MILLIS 3 * 60 * 1000
 
@@ -21,38 +21,36 @@ void MqttManager::begin() {
 
   started = mqttClient.connect("ChickenBrooder", m_mqttUser, mqttPassword);
   if (!started) {
-    DEBUG_BROODER_PRINTLN("MQTT connection failed");
+    BROODER_LOG_E("MQTT connection failed");
     return;
   }
   
-  DEBUG_BROODER_PRINTLN("MQTT connected");
+  BROODER_LOG_D("MQTT connected");
 
   mqttClient.setCallback([this](char* topic, byte* payload, unsigned int length) {
     // Handle incoming MQTT messages here
     if (strcmp(topic, MQTT_LIGHT_COMMAND_TOPIC) == 0) {
       if (strncmp((char*)payload, "On", length) == 0) {
-        DEBUG_BROODER_PRINTLN("Received remote command to turn light on");
+        BROODER_LOG_D("Received remote command to turn light on");
         lightState->setValue(true);
         return;
       }
       if (strncmp((char*)payload, "Off", length) == 0) {
-        DEBUG_BROODER_PRINTLN("Received remote command to turn light off");
+        BROODER_LOG_D("Received remote command to turn light off");
         lightState->setValue(false);
         return;
       }
-      DEBUG_BROODER_PRINTLN("Received unknown command");
+      BROODER_LOG_W("Received unknown command");
       return;
     } else if (strcmp(topic, MQTT_TARGET_TEMPERATURE_COMMAND_TOPIC) == 0) {
       char buffer[10];
       strncpy(buffer, (char*)payload, length);
       buffer[length] = '\0'; // Null-terminate the string
       float newTargetTemperature = atof(buffer);
-      DEBUG_BROODER_PRINT("Received remote command to set target temperature: ");
-      DEBUG_BROODER_PRINTLN(newTargetTemperature);
+      BROODER_LOG_D("Received remote command to set target temperature: %.2f", newTargetTemperature);
       targetTemperature->setValue(newTargetTemperature);
     } else {
-      DEBUG_BROODER_PRINT("Unexpected message on topic: ");
-      DEBUG_BROODER_PRINTLN(topic);
+      BROODER_LOG_W("Unexpected message on topic: %s", topic);
     }
   });
 
@@ -118,12 +116,12 @@ void MqttManager::loop() {
     }
     m_lastConnectAttempt = actual_millis;
 
-    DEBUG_BROODER_PRINTLN("MQTT client not connected, attempting to reconnect...");
+    BROODER_LOG_D("MQTT client not connected, attempting to reconnect...");
     if (mqttClient.connect("ChickenBrooder", m_mqttUser, mqttPassword)) {
-      DEBUG_BROODER_PRINTLN("MQTT reconnected");
+      BROODER_LOG_D("MQTT reconnected");
       mqttClient.loop();
     } else {
-      DEBUG_BROODER_PRINTLN("MQTT reconnection failed");
+      BROODER_LOG_E("MQTT reconnection failed");
     }
   }
   

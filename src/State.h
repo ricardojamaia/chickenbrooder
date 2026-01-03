@@ -3,7 +3,7 @@
 
 #include <functional>
 #include <type_traits>
-#include "DebugBrooder.h"
+#include "BrooderLog.h"
 
 #define MAX_LISTENERS 5
 
@@ -29,7 +29,7 @@ class State {
             listeners[listenerCount++] = callback;
         } else {
             // Handle the case where the maximum number of listeners is reached
-            DEBUG_BROODER_PRINT("Max listeners reached.");
+            BROODER_LOG_E("Max listeners reached.");
         }   
     }
 

@@ -1,27 +1,29 @@
-#include "NetworkLog.h"
+#include "BrooderLog.h"
 #include <esp_log.h>
 
 // Static member initialization
-WiFiUDP NetworkLog::udp;
-IPAddress NetworkLog::targetIP;
-uint16_t NetworkLog::udpPort = 6666;
-bool NetworkLog::udpEnabled = false;
-char NetworkLog::buffer[BUFFER_SIZE];
-size_t NetworkLog::bufferPos = 0;
-unsigned long NetworkLog::lastFlush = 0;
+WiFiUDP BrooderLog::udp;
+IPAddress BrooderLog::targetIP;
+uint16_t BrooderLog::udpPort = 6666;
+bool BrooderLog::udpEnabled = false;
+char BrooderLog::buffer[BUFFER_SIZE];
+size_t BrooderLog::bufferPos = 0;
+unsigned long BrooderLog::lastFlush = 0;
 
-void NetworkLog::begin(uint16_t port) {
+void BrooderLog::begin(uint16_t port) {
   udpPort = port;
+
+  esp_log_level_set("*", BROODER_LOG_LEVEL);
   
   // Redirect ESP32 logging to our custom function
   esp_log_set_vprintf(vprintf_redirect);
   
-  Serial.println("[NetworkLog] Initialized (Serial + UDP when WiFi connects)");
+  BROODER_LOG_D("[BrooderLog] Initialized (Serial + UDP when WiFi connects)");
 }
 
-void NetworkLog::setUdpBroadcast() {
+void BrooderLog::setUdpBroadcast() {
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("[NetworkLog] WiFi not connected - UDP will start when connected");
+    BROODER_LOG_D("[BrooderLog] WiFi not connected - UDP will start when connected");
     return;
   }
   
@@ -33,13 +35,15 @@ void NetworkLog::setUdpBroadcast() {
   udp.begin(udpPort);
   udpEnabled = true;
   
-  Serial.printf("[NetworkLog] UDP broadcast enabled -> %s:%d\n", 
+  BROODER_LOG_D("[BrooderLog] UDP broadcast enabled -> %s:%d\n", 
                 targetIP.toString().c_str(), udpPort);
+  BROODER_LOG_D("[BrooderLog] DEBUG: udpEnabled=%d, WiFi.status=%d\n", 
+                udpEnabled, WiFi.status());
 }
 
-void NetworkLog::setUdpTarget(IPAddress ip) {
+void BrooderLog::setUdpTarget(IPAddress ip) {
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("[NetworkLog] WiFi not connected - UDP will start when connected");
+    BROODER_LOG_D("[BrooderLog] WiFi not connected - UDP will start when connected");
     targetIP = ip;
     return;
   }
@@ -50,36 +54,41 @@ void NetworkLog::setUdpTarget(IPAddress ip) {
   udp.begin(udpPort);
   udpEnabled = true;
   
-  Serial.printf("[NetworkLog] UDP target set -> %s:%d\n", 
+  BROODER_LOG_D("[BrooderLog] UDP target set -> %s:%d\n", 
                 targetIP.toString().c_str(), udpPort);
 }
 
-void NetworkLog::enableUdp(bool enable) {
+void BrooderLog::enableUdp(bool enable) {
   if (enable && !udpEnabled && WiFi.status() == WL_CONNECTED) {
     udp.begin(udpPort);
     udpEnabled = true;
-    Serial.println("[NetworkLog] UDP enabled");
+    BROODER_LOG_D("[BrooderLog] UDP enabled");
   } else if (!enable && udpEnabled) {
     flushBuffer();
     udp.stop();
     udpEnabled = false;
-    Serial.println("[NetworkLog] UDP disabled");
+    BROODER_LOG_D("UDP disabled");
   }
 }
 
-void NetworkLog::loop() {
+void BrooderLog::loop() {
+  static unsigned long lastDebug = 0;
+  static int loopCount = 0;
+  
+  loopCount++;
+  
   // Auto-enable UDP when WiFi connects
   if (!udpEnabled && WiFi.status() == WL_CONNECTED && targetIP[0] != 0) {
     udp.begin(udpPort);
     udpEnabled = true;
-    Serial.println("[NetworkLog] UDP auto-enabled (WiFi connected)");
+    BROODER_LOG_D("[BrooderLog] UDP auto-enabled (WiFi connected)");
   }
   
   // Auto-disable UDP when WiFi disconnects
   if (udpEnabled && WiFi.status() != WL_CONNECTED) {
     udpEnabled = false;
-    bufferPos = 0;  // Clear buffer
-    Serial.println("[NetworkLog] UDP auto-disabled (WiFi disconnected)");
+    bufferPos = 0;
+    BROODER_LOG_D("[BrooderLog] UDP auto-disabled (WiFi disconnected)");
   }
   
   // Periodic flush
@@ -88,14 +97,18 @@ void NetworkLog::loop() {
   }
 }
 
-int NetworkLog::vprintf_redirect(const char *format, va_list args) {
+int BrooderLog::vprintf_redirect(const char *format, va_list args) {
   static char lineBuffer[256];
+  static unsigned long msgCount = 0;
+  
+  msgCount++;
   
   // Format the message
   int len = vsnprintf(lineBuffer, sizeof(lineBuffer), format, args);
   
   // Always send to Serial
   Serial.write((uint8_t*)lineBuffer, len);
+
   
   // Send to UDP if enabled
   if (udpEnabled && WiFi.status() == WL_CONNECTED) {
@@ -105,13 +118,13 @@ int NetworkLog::vprintf_redirect(const char *format, va_list args) {
   return len;
 }
 
-void NetworkLog::addToBuffer(const char* data, size_t len) {
+void BrooderLog::addToBuffer(const char* data, size_t len) {
+  
   // If message is too large for buffer, flush and send immediately
   if (len >= BUFFER_SIZE) {
     flushBuffer();
     udp.beginPacket(targetIP, udpPort);
     udp.write((const uint8_t*)data, len);
-    udp.endPacket();
     return;
   }
   
@@ -124,21 +137,32 @@ void NetworkLog::addToBuffer(const char* data, size_t len) {
   memcpy(buffer + bufferPos, data, len);
   bufferPos += len;
   
+  
   // Auto-flush if buffer is getting full (75%)
   if (bufferPos >= (BUFFER_SIZE * 3 / 4)) {
     flushBuffer();
   }
 }
 
-void NetworkLog::flushBuffer() {
-  if (!udpEnabled || bufferPos == 0) return;
-  
-  if (WiFi.status() == WL_CONNECTED) {
-    udp.beginPacket(targetIP, udpPort);
-    udp.write((const uint8_t*)buffer, bufferPos);
-    udp.endPacket();
+void BrooderLog::flushBuffer() {
+  if (!udpEnabled || bufferPos == 0) {
+    return;
   }
   
+  if (WiFi.status() == WL_CONNECTED) {
+    int result = udp.beginPacket(targetIP, udpPort);
+    if (!result) {
+      BROODER_LOG_E("beginPacket failed!");
+    } else {
+      size_t written = udp.write((const uint8_t*)buffer, bufferPos);
+      
+      result = udp.endPacket();
+      if (!result) {
+        BROODER_LOG_E("endPacket failed!");
+      }
+    }
+  }
+    
   bufferPos = 0;
   lastFlush = millis();
 }

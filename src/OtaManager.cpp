@@ -1,10 +1,10 @@
 #include "OtaManager.h"
 #include <ArduinoOTA.h>
-#include "DebugBrooder.h"
+#include "BrooderLog.h"
 
 bool OtaManager::begin(){
   ArduinoOTA.onStart([]() {
-    Serial.println("Start updating...");
+    BROODER_LOG_I("Start updating...");
   });
   
   ArduinoOTA.onEnd([]() {
@@ -14,32 +14,31 @@ bool OtaManager::begin(){
     } else { // U_SPIFFS
       type = "filesystem";
     }
-    Serial.println("End updating " + type);
+    BROODER_LOG_I("End updating %s", type);
   });
   
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+    BROODER_LOG_I("Progress: %u%%\r", (progress / (total / 100)));
   });
   
   ArduinoOTA.onError([](ota_error_t error) {
-    Serial.printf("Error[%u]: ", error);
+    BROODER_LOG_E("Error[%u]: ", error);
     if (error == OTA_AUTH_ERROR) {
-      Serial.println("Auth Failed");
+      BROODER_LOG_E("Auth Failed");
     } else if (error == OTA_BEGIN_ERROR) {
-      Serial.println("Begin Failed");
+      BROODER_LOG_E("Begin Failed");
     } else if (error == OTA_CONNECT_ERROR) {
-      Serial.println("Connect Failed");
+      BROODER_LOG_E("Connect Failed");
     } else if (error == OTA_RECEIVE_ERROR) {
-      Serial.println("Receive Failed");
+      BROODER_LOG_E("Receive Failed");
     } else if (error == OTA_END_ERROR) {
-      Serial.println("End Failed");
+      BROODER_LOG_E("End Failed");
     }
   });
 
-  DEBUG_BROODER_PRINT("Starting OTA ...");
   ArduinoOTA.setHostname("ChickenBrooder");
   ArduinoOTA.begin();
-  DEBUG_BROODER_PRINTLN(" done.");
+  BROODER_LOG_D("Successfully initialised OTA Manager.");
 
   started = true;
 

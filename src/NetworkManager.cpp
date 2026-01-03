@@ -1,9 +1,8 @@
 #include <WiFi.h>
-
 #include <Arduino.h>
 
 #include "NetworkManager.h"
-#include "DebugBrooder.h"
+#include "BrooderLog.h"
 
 NetworkManager::NetworkManager(const char* ssid, const char* password) {
   this->ssid = ssid;
@@ -14,30 +13,29 @@ bool NetworkManager::begin(wifi_mode_t wifi_mode) {
   this->wifi_mode = wifi_mode;
 
   if (!WiFi.mode(wifi_mode)){
-    DEBUG_BROODER_PRINTLN("Failed to set WiFi mode!");
+    BROODER_LOG_E("Failed to set WiFi mode!");
     started = false;
     return false;
   }
   
   if (WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE)){
     if (!WiFi.setHostname(BROODER_HOSTNAME)){
-      DEBUG_BROODER_PRINTLN("Failed to set hostname. Continuing ...");
+      BROODER_LOG_E("Failed to set hostname. Continuing ...");
     }
   } else {
-    DEBUG_BROODER_PRINTLN("Failed WiFi config. will not set the hostname. Continuing ...");
+    BROODER_LOG_E("Failed WiFi config. will not set the hostname. Continuing ...");
   }
   
 
   if (wifi_mode == WIFI_AP){
     if (!WiFi.softAP(BROODER_AP_SSID, BROODER_AP_PASSWORD, 1, 0, 1)){
-      DEBUG_BROODER_PRINTLN("Failed to start WiFi Access Point (AP)!");
+      BROODER_LOG_E("Failed to start WiFi Access Point (AP)!");
       started = false;
       return false;
     }
   } else if (!connectWiFi()){
     started = false;
-    DEBUG_BROODER_PRINT("Failed to connect to WiFi network: ");
-    DEBUG_BROODER_PRINTLN(ssid);
+    BROODER_LOG_E("Failed to connect to WiFi network: %s", ssid);
     return false;
   }
 
@@ -52,7 +50,7 @@ bool NetworkManager::connectWiFi() {
   }
 
   if (WiFi.status() == WL_CONNECTED){
-    DEBUG_BROODER_PRINTLN("Already connected to WiFi");
+    BROODER_LOG_W("Already connected to WiFi");
     return true;
   }
  
@@ -60,17 +58,15 @@ bool NetworkManager::connectWiFi() {
     return false;
   }
 
-  DEBUG_BROODER_PRINTLN("Connecting to WiFi...");
+  BROODER_LOG_D("Connecting to WiFi...");
   WiFi.begin(ssid, password);
 
   if (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    DEBUG_BROODER_PRINTLN("Connection Failed!");
+    BROODER_LOG_E("Connection Failed!");
     lastAttempt = millis();
     return false;
   }
-  DEBUG_BROODER_PRINTLN("IP address: ");
-  //DEBUG_BROODER_PRINTLN(WiFi.localIP());
-
+  BROODER_LOG_D("IP address: %s", WiFi.localIP());
 
   lastAttempt = 0;
   connected = true;
@@ -83,7 +79,7 @@ bool NetworkManager::connectWiFi() {
 void NetworkManager::run() {
 
   if (!started){
-    DEBUG_BROODER_PRINTLN("NetworkManager not started");
+    BROODER_LOG_E("NetworkManager not started");
     return;
   }
 
@@ -95,14 +91,14 @@ void NetworkManager::run() {
     if (lastAttempt + RETRY_DELAY > millis()){
       return;
     }
-    DEBUG_BROODER_PRINTLN("WiFi disconnected, trying to reconnect...");
+    BROODER_LOG_E("WiFi disconnected, trying to reconnect...");
     lastAttempt = millis();
 
     if (!WiFi.reconnect()) {
-      DEBUG_BROODER_PRINTLN("Failed to reconnect to WiFi");
+      BROODER_LOG_E("Failed to reconnect to WiFi");
       return;
     }
-    DEBUG_BROODER_PRINTLN("WiFi reconnected!");
+    BROODER_LOG_I("WiFi reconnected!");
   }
 
 }

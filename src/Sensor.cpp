@@ -1,5 +1,5 @@
 #include "Sensor.h"
-#include "DebugBrooder.h"
+#include "BrooderLog.h"
 
 #define REPORT_ERROR_EVERY_MILLIS 60 * 1000
 
@@ -18,12 +18,10 @@ void Sensor::update() {
     unsigned long actual_milis = millis();
     m_num_errors++;
     if (m_num_errors == 1){
-      DEBUG_BROODER_PRINTLN("Error reading DHT sensor.");
+      BROODER_LOG_E("Error reading DHT sensor.");
     } else if (m_lastReportedFailure + REPORT_ERROR_EVERY_MILLIS < actual_milis){
       m_lastReportedFailure = actual_milis;
-      DEBUG_BROODER_PRINT("Error reading DHT sensor for the last ");
-      DEBUG_BROODER_PRINT(m_lastReportedFailure);
-      DEBUG_BROODER_PRINTLN(" times.");
+      BROODER_LOG_E("Error reading DHT sensor for the last %u times", m_lastReportedFailure);
     }
     return;
   }
